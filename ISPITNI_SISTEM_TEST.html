@@ -429,6 +429,43 @@
       margin-top:16px; padding-top:12px; color:#4d5e6d; font-size:14px;
       line-height:1.5; border-top:1px solid #dfe3e6;
     }
+    body.list-active { background:#f4f4f4; }
+    body.list-active .wrap { min-height:100vh; padding:40px 0; align-items:flex-start; }
+    #questionListCard {
+      width:min(880px,calc(100% - 24px)); margin:0 auto; padding:28px 30px;
+      color:#111; background:#fff;
+    }
+    .question-list-header {
+      display:flex; align-items:center; justify-content:space-between; gap:18px;
+      margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid #d9dee2;
+    }
+    #questionListCard h2 { margin:0 0 5px; color:#008fe8; font-size:23px; }
+    #questionListCard .mini { color:#647481; }
+    .question-list { display:grid; gap:9px; }
+    .question-list-item { border:1px solid #d3dbe1; background:#fff; }
+    .question-list-item summary {
+      display:grid; grid-template-columns:42px minmax(0,1fr) 24px; gap:10px;
+      align-items:start; padding:14px 16px; cursor:pointer; list-style:none;
+      color:#17232d; font-size:15px; line-height:1.45;
+    }
+    .question-list-item summary::-webkit-details-marker { display:none; }
+    .question-list-item summary:hover { background:#f3f8fc; }
+    .question-list-item summary::after {
+      content:'+'; justify-self:end; color:#087fcf; font-size:22px; font-weight:700; line-height:1;
+    }
+    .question-list-item[open] summary { background:#f3f8fc; }
+    .question-list-item[open] summary::after { content:'−'; }
+    .question-list-number { color:#087fcf; font-weight:800; }
+    .question-list-meta { display:block; margin-top:5px; color:#74838e; font-size:12px; }
+    .question-list-answer {
+      padding:16px 18px 18px 68px; border-top:1px solid #d9e2e8;
+      background:#fbfcfd;
+    }
+    .question-list-answer .response-label { color:#24733d; }
+    .question-list-explanation {
+      margin-top:12px; padding-top:11px; color:#4d5e6d; font-size:14px;
+      line-height:1.5; border-top:1px solid #dfe3e6;
+    }
     @media (min-width:700px) {
       #finishBtn { right:34px; }
       #examTimer { right:47px; }
@@ -442,6 +479,11 @@
       #quizCard .question { width:100%; padding:0 72px; text-align:center; }
       #finishBtn { top:13px; right:10px; width:96px; min-width:96px; height:25px; }
       #examTimer { right:17px; bottom:8px; font-size:12px; }
+      body.list-active .wrap { padding:12px 0; }
+      #questionListCard { width:calc(100% - 16px); padding:18px 12px; }
+      .question-list-header { align-items:flex-start; }
+      .question-list-item summary { grid-template-columns:32px minmax(0,1fr) 20px; padding:12px 10px; }
+      .question-list-answer { padding:14px 10px 16px 52px; }
     }
   </style>
 </head>
@@ -483,10 +525,22 @@
             <button class="btn primary" id="startAllBtn" type="button">Sva izabrana pitanja</button>
             <button class="btn success" id="start25Btn" type="button">Random 25 pitanja</button>
             <button class="btn" id="simulateExamBtn" type="button">Simuliraj ispit</button>
+            <button class="btn" id="questionListBtn" type="button">Lista pitanja</button>
           </div>
           <div class="mini" style="margin-top:12px">Ako završiš ranije, neodgovorena pitanja računaju se kao netačna i procenat se računa prema cijelom pokrenutom testu.</div>
         </div>
       </div>
+    </section>
+
+    <section class="card hidden" id="questionListCard">
+      <div class="question-list-header">
+        <div>
+          <h2>Lista pitanja</h2>
+          <div class="mini">Klikni na pitanje da prikažeš tačan odgovor i objašnjenje.</div>
+        </div>
+        <button class="btn primary" id="questionListBackBtn" type="button">Nazad</button>
+      </div>
+      <div class="question-list" id="questionList"></div>
     </section>
 
     <section class="card hidden" id="quizCard">
@@ -1014,8 +1068,36 @@
   }
 
   function showMenu() {
-    stopExamTimer(); document.body.classList.remove('quiz-active'); $('examTopbar').classList.add('hidden');
-    state.started=false; $('resultCard').classList.add('hidden'); $('quizCard').classList.add('hidden'); $('menuCard').classList.remove('hidden');
+    stopExamTimer(); document.body.classList.remove('quiz-active','list-active'); $('examTopbar').classList.add('hidden');
+    state.started=false; $('resultCard').classList.add('hidden'); $('quizCard').classList.add('hidden'); $('questionListCard').classList.add('hidden'); $('menuCard').classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function renderQuestionList() {
+    const wrap=$('questionList');
+    if (wrap.childElementCount) return;
+    for (const [index,q] of BANK.entries()) {
+      const item=document.createElement('details'); item.className='question-list-item';
+      const type=q.type==='multiple'?'više tačnih odgovora':'jedan tačan odgovor';
+      item.innerHTML=`
+        <summary>
+          <span class="question-list-number">${index+1}.</span>
+          <span>${escapeHtml(q.q)}<span class="question-list-meta">${escapeHtml(q.lesson)} · ${type}</span></span>
+        </summary>
+        <div class="question-list-answer">
+          <div class="response-label">Tačan odgovor</div>
+          ${answerListHtml(q,q.c,'correct-list')}
+          <div class="question-list-explanation"><strong>Objašnjenje:</strong> ${escapeHtml(q.e)}</div>
+        </div>`;
+      wrap.appendChild(item);
+    }
+  }
+
+  function showQuestionList() {
+    stopExamTimer(); state.started=false;
+    document.body.classList.remove('quiz-active'); document.body.classList.add('list-active');
+    $('examTopbar').classList.add('hidden'); $('menuCard').classList.add('hidden'); $('quizCard').classList.add('hidden'); $('resultCard').classList.add('hidden');
+    renderQuestionList(); $('questionListCard').classList.remove('hidden');
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -1044,6 +1126,8 @@
   $('startAllBtn').addEventListener('click',()=>start('all'));
   $('start25Btn').addEventListener('click',()=>start('25'));
   $('simulateExamBtn').addEventListener('click',()=>start('exam'));
+  $('questionListBtn').addEventListener('click',showQuestionList);
+  $('questionListBackBtn').addEventListener('click',showMenu);
   $('clearAnswerBtn').addEventListener('click',()=>{
     const q=currentQuestion();
     delete state.answers[q.id];
