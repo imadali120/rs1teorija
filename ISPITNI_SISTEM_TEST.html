@@ -203,9 +203,11 @@
       background:#fff; box-shadow:none;
     }
     #menuCard,#resultCard { margin:0; padding-top:28px; }
+    #menuCard { position:relative; }
     #menuCard h2,#resultCard h2 { color:#008fe8; }
     #menuCard .menu-calligraphy {
-      margin:0 0 38px; text-align:center; color:#087fcf;
+      position:absolute; left:0; right:0; bottom:calc(100% + 28px);
+      margin:0; text-align:center; color:#087fcf;
     }
     #menuCard .arabic-title {
       direction:rtl; unicode-bidi:isolate; font-family:"Arabic Typesetting","Traditional Arabic","Noto Naskh Arabic","Amiri",serif;
@@ -278,7 +280,7 @@
     #resultCard .progress { border-radius:0; }
     @media (max-width:560px) {
       .card,#quizCard { padding:12px 10px; }
-      #menuCard .menu-calligraphy { margin-bottom:25px; }
+      #menuCard .menu-calligraphy { position:static; margin-bottom:25px; }
       #menuCard .arabic-title { font-size:50px; }
       #menuCard .latin-title { font-size:15px; }
       .question { margin-bottom:20px; }
@@ -322,6 +324,7 @@
     .verdict { font-size:17px; }
     @media (max-width:760px) {
       .wrap { min-height:100vh; padding:14px 0; }
+      #menuCard .menu-calligraphy { position:static; margin-bottom:25px; }
       #quizCard { padding:18px 14px; }
       .question { margin-bottom:24px; font-size:16px; }
       .options { width:100%; }
