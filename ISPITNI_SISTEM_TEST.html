@@ -331,7 +331,14 @@
     }
     body.quiz-active { background:#f4f4f4; }
     body.quiz-active .wrap { min-height:100vh; padding-top:112px; }
-    body.quiz-active #quizCard { background:#fff; }
+    body.quiz-active #quizCard { position:relative; background:#fff; }
+    #quizCard #examPill {
+      position:absolute; z-index:4; top:9px; right:12px; display:inline-block;
+      margin:0; padding:0; border:0 !important; background:transparent !important;
+      color:#b8860b !important; font-size:16px; line-height:1; font-weight:950;
+      letter-spacing:1.2px; text-shadow:0 1px 0 #fff2b8;
+    }
+    #quizCard .question { padding-right:92px; }
     #finishBtn {
       position:fixed; z-index:30; top:20px; right:22px;
       width:112px; min-width:112px; height:28px; margin:0;
@@ -406,6 +413,8 @@
     @media (max-width:560px) {
       .exam-topbar { height:82px; border-bottom-width:5px; }
       body.quiz-active .wrap { padding-top:92px; }
+      #quizCard #examPill { top:7px; right:9px; font-size:13px; }
+      #quizCard .question { padding-right:72px; }
       #finishBtn { top:13px; right:10px; width:96px; min-width:96px; height:25px; }
       #examTimer { right:17px; bottom:8px; font-size:12px; }
     }
@@ -452,6 +461,7 @@
     </section>
 
     <section class="card hidden" id="quizCard">
+      <span class="exam-pill hidden" id="examPill" title="Pitanje i svi ponuđeni odgovori potvrđeni su na fotografiji ispita">ISPITNI</span>
       <div class="toolbar">
         <div class="row">
           <span class="pill" id="counterPill"></span>
@@ -459,7 +469,6 @@
           <span class="pill" id="typePill"></span>
           <span class="pill" id="answeredPill"></span>
         </div>
-        <span class="pill exam-pill hidden" id="examPill" title="Pitanje i svi ponuđeni odgovori potvrđeni su na fotografiji ispita">ISPITNI</span>
       </div>
       <div class="progress"><div class="bar" id="progressBar"></div></div>
       <h2 class="question" id="questionText"></h2>
@@ -727,7 +736,19 @@
   };
   Object.assign(EXPLANATION_UPDATES,EXPLANATION_UPDATES_MORE);
   for (const q of BANK) if (EXPLANATION_UPDATES[q.id]) q.e=EXPLANATION_UPDATES[q.id];
-  const EXAM_QUESTION_IDS = new Set([1,10,11,17,22,27,29,38,42,46,48,56,62,63]);
+  const EXAM_QUESTION_SOURCES = new Map([
+    [1,"1Capture.PNG"],
+    [10,"9Capture.PNG"],
+    [11,"10Capture.PNG"],
+    [22,"6Capture.PNG"],
+    [27,"2Capture.PNG"],
+    [29,"3Capture.PNG"],
+    [38,"11Capture.PNG"],
+    [42,"8Capture.PNG"],
+    [46,"IMG_20230130_180203.jpg"],
+    [48,"14Capture.PNG"],
+    [63,"5Capture.PNG"]
+  ]);
 
   const $ = id => document.getElementById(id);
   const state = {
@@ -845,7 +866,11 @@
     $('lessonPill').textContent=q.lesson;
     $('typePill').textContent=q.type==='multiple'?'VIŠE TAČNIH':'JEDAN TAČAN';
     $('answeredPill').textContent=`Odgovoreno ${answeredCount()}/${total}`;
-    $('examPill').classList.toggle('hidden',!EXAM_QUESTION_IDS.has(q.id));
+    const examSource=EXAM_QUESTION_SOURCES.get(q.id);
+    $('examPill').classList.toggle('hidden',!examSource);
+    $('examPill').title=examSource
+      ? `Pitanje i svi ponuđeni odgovori potvrđeni su na fotografiji ispita: ${examSource}`
+      : '';
     $('progressBar').style.width=`${Math.round(((state.index+1)/total)*100)}%`;
     $('questionText').textContent=`${state.index+1}/${total} : ${q.q}`;
     const selected=new Set(state.answers[q.id]||[]), wrap=$('options');
