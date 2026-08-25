@@ -1025,7 +1025,7 @@
     for (const lesson of lessons) {
       const count=BANK.filter(q=>belongsToCategory(q,lesson)).length;
       const label=document.createElement('label'); label.className='lesson';
-      const input=document.createElement('input'); input.type='checkbox'; input.className='lesson-check'; input.value=lesson; input.checked=true;
+      const input=document.createElement('input'); input.type='checkbox'; input.className='lesson-check'; input.value=lesson; input.checked=!EXTRA_CATEGORIES.has(lesson);
       input.addEventListener('change',updateSelectedCount);
       const text=document.createElement('span'); text.textContent=`${lesson} (${count})`;
       label.append(input,text); grid.appendChild(label);
@@ -1034,7 +1034,7 @@
     updateSelectedCount();
   }
 
-  $('selectAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=true);updateSelectedCount();});
+  $('selectAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=!EXTRA_CATEGORIES.has(x.value));updateSelectedCount();});
   $('clearAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=false);updateSelectedCount();});
   $('startAllBtn').addEventListener('click',()=>start('all'));
   $('start25Btn').addEventListener('click',()=>start('25'));
