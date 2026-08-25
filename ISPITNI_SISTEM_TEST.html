@@ -749,6 +749,9 @@
     [48,"14Capture.PNG"],
     [63,"5Capture.PNG"]
   ]);
+  const EXTRA_CATEGORIES = new Map([
+    ["Za Ajcu - Teza Pitanja",new Set([60,17,30,40,22,39,61,11,92])]
+  ]);
 
   const $ = id => document.getElementById(id);
   const state = {
@@ -803,7 +806,13 @@
   }
   function currentQuestion() { return BANK.find(q=>q.id===state.order[state.index]); }
   function selectedLessons() { return [...document.querySelectorAll('.lesson-check:checked')].map(x=>x.value); }
-  function pool() { const lessons=new Set(selectedLessons()); return BANK.filter(q=>lessons.has(q.lesson)); }
+  function belongsToCategory(q,category) {
+    return q.lesson===category || EXTRA_CATEGORIES.get(category)?.has(q.id)===true;
+  }
+  function pool() {
+    const categories=selectedLessons();
+    return BANK.filter(q=>categories.some(category=>belongsToCategory(q,category)));
+  }
   function optionIndices(q) {
     if (!state.optionOrder[q.id]) {
       const base=q.o.map((_,i)=>i);
@@ -986,9 +995,9 @@
   }
 
   function initMenu() {
-    const lessons=[...new Set(BANK.map(q=>q.lesson))], grid=$('lessonGrid');
+    const lessons=[...new Set([...BANK.map(q=>q.lesson),...EXTRA_CATEGORIES.keys()])], grid=$('lessonGrid');
     for (const lesson of lessons) {
-      const count=BANK.filter(q=>q.lesson===lesson).length;
+      const count=BANK.filter(q=>belongsToCategory(q,lesson)).length;
       const label=document.createElement('label'); label.className='lesson';
       const input=document.createElement('input'); input.type='checkbox'; input.className='lesson-check'; input.value=lesson; input.checked=true;
       input.addEventListener('change',updateSelectedCount);
