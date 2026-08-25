@@ -506,7 +506,7 @@
         <div class="latin-title">Razvoj Softvera 1</div>
       </div>
       <h2>Glavni meni</h2>
-      <div class="sub">Izaberi oblasti, a zatim pokreni sva pitanja, nasumičnih 25 ili simulaciju ispita.</div>
+      <div class="sub">Izbor oblasti važi za sva pitanja i Random 25. Simulacija ispita uvijek bira 21 nasumično pitanje iz cijele baze.</div>
       <div class="setup-grid">
         <div class="box">
           <div class="row between"><strong>Oblasti / lekcije</strong><span class="mini" id="selectedCount"></span></div>
@@ -1004,9 +1004,8 @@
   }
 
   function start(mode) {
-    const chosen=pool();
+    const chosen=mode==='exam'?BANK:pool();
     if (!chosen.length) { alert('Označi najmanje jednu oblast.'); return; }
-    if (mode==='exam' && chosen.length<21) { alert('Za simulaciju ispita označi oblasti koje zajedno imaju najmanje 21 pitanje.'); return; }
     let ids=chosen.map(q=>q.id);
     if (mode==='exam') ids=shuffle(ids).slice(0,21);
     else if (mode==='25') ids=shuffle(ids).slice(0,Math.min(25,ids.length));
@@ -1111,7 +1110,7 @@
 
   function updateSelectedCount() {
     const count=pool().length; $('selectedCount').textContent=`${count} pitanja`;
-    $('startAllBtn').disabled=count===0; $('start25Btn').disabled=count===0; $('simulateExamBtn').disabled=count<21;
+    $('startAllBtn').disabled=count===0; $('start25Btn').disabled=count===0; $('simulateExamBtn').disabled=false;
     $('start25Btn').textContent=count>=25?'Random 25 pitanja':`Random ${count} pitanja`;
   }
 
