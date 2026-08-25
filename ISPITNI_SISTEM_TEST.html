@@ -356,7 +356,10 @@
       color:#b8860b !important; font-size:16px; line-height:1; font-weight:950;
       letter-spacing:1.2px; text-shadow:0 1px 0 #fff2b8;
     }
-    #quizCard .question { padding-right:92px; }
+    #quizCard .question {
+      width:min(760px,calc(100% - 190px)); margin:0 auto 35px;
+      padding-right:0; text-align:center;
+    }
     #finishBtn {
       position:fixed; z-index:30; top:20px; right:22px;
       width:112px; min-width:112px; height:28px; margin:0;
@@ -436,7 +439,7 @@
       #resultCard { width:calc(100% - 16px); padding:28px 18px; }
       #resultCard .result-summary { min-height:420px; }
       #quizCard #examPill { top:7px; right:9px; font-size:13px; }
-      #quizCard .question { padding-right:72px; }
+      #quizCard .question { width:100%; padding:0 72px; text-align:center; }
       #finishBtn { top:13px; right:10px; width:96px; min-width:96px; height:25px; }
       #examTimer { right:17px; bottom:8px; font-size:12px; }
     }
@@ -459,7 +462,7 @@
         <div class="latin-title">Razvoj Softvera 1</div>
       </div>
       <h2>Glavni meni</h2>
-      <div class="sub">Izaberi oblasti, a zatim pokreni sva pitanja ili nasumičnih 25.</div>
+      <div class="sub">Izaberi oblasti, a zatim pokreni sva pitanja, nasumičnih 25 ili simulaciju ispita.</div>
       <div class="setup-grid">
         <div class="box">
           <div class="row between"><strong>Oblasti / lekcije</strong><span class="mini" id="selectedCount"></span></div>
@@ -475,11 +478,11 @@
             <label class="pill"><input type="checkbox" id="shuffleQuestions" checked> Nasumičan redoslijed pitanja</label>
             <label class="pill"><input type="checkbox" id="shuffleAnswers" checked> Nasumičan redoslijed odgovora</label>
             <label class="pill"><input type="checkbox" id="instantFeedback" checked> Prikaži tačno/netačno nakon pitanja</label>
-            <label class="pill"><input type="checkbox" id="timer25"> Tajmer 25 minuta</label>
           </div>
           <div class="row" style="margin-top:18px">
             <button class="btn primary" id="startAllBtn" type="button">Sva izabrana pitanja</button>
             <button class="btn success" id="start25Btn" type="button">Random 25 pitanja</button>
+            <button class="btn" id="simulateExamBtn" type="button">Simuliraj ispit</button>
           </div>
           <div class="mini" style="margin-top:12px">Ako završiš ranije, neodgovorena pitanja računaju se kao netačna i procenat se računa prema cijelom pokrenutom testu.</div>
         </div>
@@ -941,12 +944,14 @@
   function start(mode) {
     const chosen=pool();
     if (!chosen.length) { alert('Označi najmanje jednu oblast.'); return; }
+    if (mode==='exam' && chosen.length<21) { alert('Za simulaciju ispita označi oblasti koje zajedno imaju najmanje 21 pitanje.'); return; }
     let ids=chosen.map(q=>q.id);
-    if (mode==='25') ids=shuffle(ids).slice(0,Math.min(25,ids.length));
+    if (mode==='exam') ids=shuffle(ids).slice(0,21);
+    else if (mode==='25') ids=shuffle(ids).slice(0,Math.min(25,ids.length));
     else if ($('shuffleQuestions').checked) ids=shuffle(ids);
     state.order=ids; state.index=0; state.answers={}; state.optionOrder={}; state.advanceReady={}; state.started=true;
-    state.instantFeedback=$('instantFeedback').checked;
-    state.timeLimitSeconds=$('timer25').checked?25*60:0;
+    state.instantFeedback=mode==='exam'?false:$('instantFeedback').checked;
+    state.timeLimitSeconds=mode==='exam'?25*60:0;
     $('questionJump').innerHTML=ids.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
     stopExamTimer(); state.timerStartedAt=Date.now();
     state.timerDeadline=state.timeLimitSeconds?state.timerStartedAt+(state.timeLimitSeconds*1000):0;
@@ -1016,7 +1021,7 @@
 
   function updateSelectedCount() {
     const count=pool().length; $('selectedCount').textContent=`${count} pitanja`;
-    $('startAllBtn').disabled=count===0; $('start25Btn').disabled=count===0;
+    $('startAllBtn').disabled=count===0; $('start25Btn').disabled=count===0; $('simulateExamBtn').disabled=count<21;
     $('start25Btn').textContent=count>=25?'Random 25 pitanja':`Random ${count} pitanja`;
   }
 
@@ -1038,6 +1043,7 @@
   $('clearAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=false);updateSelectedCount();});
   $('startAllBtn').addEventListener('click',()=>start('all'));
   $('start25Btn').addEventListener('click',()=>start('25'));
+  $('simulateExamBtn').addEventListener('click',()=>start('exam'));
   $('clearAnswerBtn').addEventListener('click',()=>{
     const q=currentQuestion();
     delete state.answers[q.id];
