@@ -441,6 +441,8 @@
     }
     #questionListCard h2 { margin:0 0 5px; color:#008fe8; font-size:23px; }
     #questionListCard .mini { color:#647481; }
+    .test-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:18px; }
+    .test-actions .btn { width:100%; }
     .question-list { display:grid; gap:9px; }
     .question-list-item { border:1px solid #d3dbe1; background:#fff; }
     .question-list-item summary {
@@ -521,7 +523,7 @@
             <label class="pill"><input type="checkbox" id="shuffleAnswers" checked> Nasumičan redoslijed odgovora</label>
             <label class="pill"><input type="checkbox" id="instantFeedback" checked> Prikaži tačno/netačno nakon pitanja</label>
           </div>
-          <div class="row" style="margin-top:18px">
+          <div class="test-actions">
             <button class="btn primary" id="startAllBtn" type="button">Sva izabrana pitanja</button>
             <button class="btn success" id="start25Btn" type="button">Random 25 pitanja</button>
             <button class="btn" id="simulateExamBtn" type="button">Simuliraj ispit</button>
