@@ -369,10 +369,12 @@
     .feedback.good .verdict { color:#18763c; }
     .feedback.bad .verdict { color:#b4232b; }
     #resultCard {
-      width:100%; max-width:none; min-height:520px; padding:42px 30px;
-      text-align:center; background:#fff;
+      width:min(700px,calc(100% - 24px)); max-width:700px; min-height:520px;
+      margin:0 auto; padding:42px 30px; text-align:center; background:#fff;
     }
-    #resultCard .result-summary { display:grid; justify-items:center; gap:24px; }
+    #resultCard .result-summary {
+      display:grid; min-height:436px; align-content:center; justify-items:center; gap:24px;
+    }
     #resultCard h2 { margin:0; color:#46515a; font-size:22px; }
     #resultCard .result-facts {
       display:grid; justify-items:start; gap:10px; color:#111;
@@ -431,6 +433,8 @@
     @media (max-width:560px) {
       .exam-topbar { height:82px; border-bottom-width:5px; }
       body.quiz-active .wrap { padding-top:92px; }
+      #resultCard { width:calc(100% - 16px); padding:28px 18px; }
+      #resultCard .result-summary { min-height:420px; }
       #quizCard #examPill { top:7px; right:9px; font-size:13px; }
       #quizCard .question { padding-right:72px; }
       #finishBtn { top:13px; right:10px; width:96px; min-width:96px; height:25px; }
