@@ -204,6 +204,18 @@
     }
     #menuCard,#resultCard { margin:0; padding-top:28px; }
     #menuCard h2,#resultCard h2 { color:#008fe8; }
+    #menuCard .menu-calligraphy {
+      margin:0 0 38px; text-align:center; color:#087fcf;
+    }
+    #menuCard .arabic-title {
+      direction:rtl; unicode-bidi:isolate; font-family:"Arabic Typesetting","Traditional Arabic","Noto Naskh Arabic","Amiri",serif;
+      font-size:clamp(58px,8vw,92px); font-weight:700; line-height:1.05;
+      text-shadow:0 1px 0 #fff,0 3px 12px rgba(0,105,180,.16);
+    }
+    #menuCard .latin-title {
+      margin-top:8px; color:#315c7d; font-family:Georgia,"Times New Roman",serif;
+      font-size:clamp(16px,2.2vw,22px); font-weight:600; letter-spacing:.08em;
+    }
     #menuCard .box { border:0; background:#fff; padding:10px 0; }
     #menuCard .lesson { border:0; background:#fff; padding:5px 2px; }
     #menuCard .pill { border:0; background:#fff; }
@@ -266,6 +278,9 @@
     #resultCard .progress { border-radius:0; }
     @media (max-width:560px) {
       .card,#quizCard { padding:12px 10px; }
+      #menuCard .menu-calligraphy { margin-bottom:25px; }
+      #menuCard .arabic-title { font-size:50px; }
+      #menuCard .latin-title { font-size:15px; }
       .question { margin-bottom:20px; }
       .options { width:100%; }
       .footer { gap:5px; margin-top:28px; }
@@ -432,6 +447,10 @@
     </header>
 
     <section class="card" id="menuCard">
+      <div class="menu-calligraphy" aria-label="Razvoj Softvera 1">
+        <div class="arabic-title" lang="ar" dir="rtl">تطوير البرمجيات</div>
+        <div class="latin-title">Razvoj Softvera 1</div>
+      </div>
       <h2>Glavni meni</h2>
       <div class="sub">Izaberi oblasti, a zatim pokreni sva pitanja ili nasumičnih 25.</div>
       <div class="setup-grid">
