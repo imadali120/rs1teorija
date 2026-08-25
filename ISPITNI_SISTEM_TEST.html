@@ -439,6 +439,8 @@
           <div style="display:grid;gap:10px;margin-top:12px">
             <label class="pill"><input type="checkbox" id="shuffleQuestions" checked> Nasumičan redoslijed pitanja</label>
             <label class="pill"><input type="checkbox" id="shuffleAnswers" checked> Nasumičan redoslijed odgovora</label>
+            <label class="pill"><input type="checkbox" id="instantFeedback" checked> Prikaži tačno/netačno nakon pitanja</label>
+            <label class="pill"><input type="checkbox" id="timer25"> Tajmer 25 minuta</label>
           </div>
           <div class="row" style="margin-top:18px">
             <button class="btn primary" id="startAllBtn" type="button">Sva izabrana pitanja</button>
@@ -479,7 +481,7 @@
         <h2>Rezultat</h2>
         <div class="result-facts">
           <div><strong>Predmet</strong> Razvoj softvera</div>
-          <div><strong>Trajanje</strong> 60 min.</div>
+          <div><strong>Trajanje</strong> <span id="resultDuration"></span></div>
           <div><strong>Početak</strong> <span id="resultStart"></span></div>
           <div><strong>Kraj</strong> <span id="resultEnd"></span></div>
           <div><strong>Osvojeni procenat</strong> <span id="score"></span></div>
@@ -616,7 +618,8 @@
     {id:109,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Funkcionalnosti sa manjim prioritetom su manje opisane i nalaze se pri dnu product backloga?",o:["Da","Ne"],c:[0],e:"Stavke pri vrhu su bliže realizaciji pa moraju biti detaljnije razrađene. Niže prioritetne stavke čekaju kasnije sprintove i zato se drže pri dnu sa manje detalja."},
     {id:110,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Kod alfa testiranja korisnik je uključen u proces testiranja sistema koji se još nalazi u razvojnom okruženju.",o:["Da","Ne"],c:[0],e:"Alfa testiranje se izvodi prije puštanja stabilne verzije široj grupi korisnika, pa korisnik testira sistem dok je on još u kontrolisanom razvojnom okruženju."},
     {id:111,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Automatizovani alati se koriste u okviru",o:["Statičke analize","Dinamičke analize"],c:[1],e:"Dinamička analiza prati ponašanje programa tokom izvršavanja, pa automatizovani alati mogu mjeriti i prijavljivati ono što se dešava dok sistem radi."},
-    {id:112,lesson:"Lekcija 1 — Osnove",type:"single",q:"Alat je automatizovan sistem?",o:["Da","Ne"],c:[0],e:"Alat je instrument, odnosno automatizovani sistem, koji pomaže da se određena aktivnost izvrši kvalitetnije i dosljednije."}
+    {id:112,lesson:"Lekcija 1 — Osnove",type:"single",q:"Alat je automatizovan sistem?",o:["Da","Ne"],c:[0],e:"Alat je instrument, odnosno automatizovani sistem, koji pomaže da se određena aktivnost izvrši kvalitetnije i dosljednije."},
+    {id:113,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"U okruženju gdje je stepen neizvjesnosti visok, koji pristup organizaciji tima je bolji?",o:["Glavni programer","Bez egoizma"],c:[1],e:"Kod velike neizvjesnosti korisno je da se znanje i odlučivanje rasporede na cijeli tim. Ravnopravni članovi mogu ponuditi više različitih procjena i brže prilagoditi odluke novim informacijama, dok bi oslanjanje na samo jednog glavnog programera stvorilo jednu tačku odlučivanja."}
   ];
 
   const EXPLANATION_UPDATES = {
@@ -723,9 +726,21 @@
   const EXAM_QUESTION_IDS = new Set([1,10,11,17,22,27,29,38,42,46,48,56,62,63]);
 
   const $ = id => document.getElementById(id);
-  const state = { order:[], index:0, answers:{}, optionOrder:{}, advanceReady:{}, started:false, timerStartedAt:0, timerInterval:null };
+  const state = {
+    order:[], index:0, answers:{}, optionOrder:{}, advanceReady:{}, started:false,
+    instantFeedback:true, timeLimitSeconds:0, timerStartedAt:0, timerDeadline:0, timerInterval:null
+  };
 
   function updateExamTimer() {
+    if (state.timeLimitSeconds>0) {
+      const remaining=Math.max(0,Math.ceil((state.timerDeadline-Date.now())/1000));
+      const hours=String(Math.floor(remaining/3600)).padStart(2,'0');
+      const minutes=String(Math.floor((remaining%3600)/60)).padStart(2,'0');
+      const seconds=String(remaining%60).padStart(2,'0');
+      $('examTimer').textContent=`${hours}:${minutes}:${seconds}`;
+      if (remaining===0 && state.started) finish('timeout');
+      return;
+    }
     const elapsed=Math.max(0,Math.floor((Date.now()-state.timerStartedAt)/1000));
     const hours=String(Math.floor(elapsed/3600)).padStart(2,'0');
     const minutes=String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
@@ -856,7 +871,7 @@
     $('prevBtn').disabled=state.index===0;
     $('nextBtn').disabled=false;
     $('nextBtn').textContent='>>';
-    state.advanceReady[q.id]?showFeedback():hideFeedback();
+    state.instantFeedback && state.advanceReady[q.id]?showFeedback():hideFeedback();
   }
 
   function start(mode) {
@@ -866,8 +881,12 @@
     if (mode==='25') ids=shuffle(ids).slice(0,Math.min(25,ids.length));
     else if ($('shuffleQuestions').checked) ids=shuffle(ids);
     state.order=ids; state.index=0; state.answers={}; state.optionOrder={}; state.advanceReady={}; state.started=true;
+    state.instantFeedback=$('instantFeedback').checked;
+    state.timeLimitSeconds=$('timer25').checked?25*60:0;
     $('questionJump').innerHTML=ids.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
-    stopExamTimer(); state.timerStartedAt=Date.now(); updateExamTimer();
+    stopExamTimer(); state.timerStartedAt=Date.now();
+    state.timerDeadline=state.timeLimitSeconds?state.timerStartedAt+(state.timeLimitSeconds*1000):0;
+    updateExamTimer();
     state.timerInterval=setInterval(updateExamTimer,1000);
     document.body.classList.add('quiz-active'); $('examTopbar').classList.remove('hidden');
     $('menuCard').classList.add('hidden'); $('resultCard').classList.add('hidden'); $('quizCard').classList.remove('hidden');
@@ -877,7 +896,7 @@
   function move(delta) {
     if (delta>0) {
       const q=currentQuestion();
-      if (!state.advanceReady[q.id]) {
+      if (state.instantFeedback && !state.advanceReady[q.id]) {
         state.advanceReady[q.id]=true;
         showFeedback();
         $('nextBtn').textContent='>>';
@@ -890,7 +909,9 @@
     state.index=next; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  function finish() {
+  function finish(reason='manual') {
+    if (!state.started) return;
+    state.started=false;
     stopExamTimer();
     const total=state.order.length;
     const rows=state.order.map(id=>{const q=BANK.find(x=>x.id===id),selected=state.answers[id]||[];return {q,selected,ok:isCorrect(q,selected)};});
@@ -898,8 +919,9 @@
     $('quizCard').classList.add('hidden'); $('resultCard').classList.remove('hidden');
     $('resultStart').textContent=formatResultTime(state.timerStartedAt);
     $('resultEnd').textContent=formatResultTime(Date.now());
+    $('resultDuration').textContent=state.timeLimitSeconds?'25 min.':'60 min.';
     $('score').textContent=`${pct}%`;
-    $('scoreDetails').textContent=`Tačno ${correct} od ${total} · Odgovoreno ${answered} od ${total}`;
+    $('scoreDetails').textContent=`Tačno ${correct} od ${total} · Odgovoreno ${answered} od ${total}${reason==='timeout'?' · Vrijeme je isteklo':''}`;
     const bad=rows.filter(x=>!x.ok), wrap=$('results'); wrap.innerHTML='';
     $('mistakesPanel').classList.add('hidden');
     $('toggleMistakesBtn').disabled=bad.length===0;
