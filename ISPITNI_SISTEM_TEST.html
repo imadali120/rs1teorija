@@ -458,6 +458,11 @@
     .question-list-item[open] summary { background:#f3f8fc; }
     .question-list-item[open] summary::after { content:'−'; }
     .question-list-number { color:#087fcf; font-weight:800; }
+    .question-list-new {
+      display:inline-block; margin-left:8px; padding:2px 7px; border-radius:999px;
+      color:#fff; background:#e05620; font-size:10px; font-weight:900;
+      line-height:1.4; letter-spacing:.6px; vertical-align:2px;
+    }
     .question-list-meta { display:block; margin-top:5px; color:#74838e; font-size:12px; }
     .question-list-answer {
       padding:16px 18px 18px 68px; border-top:1px solid #d9e2e8;
@@ -843,6 +848,7 @@
   const EXTRA_CATEGORIES = new Map([
     ["Teza Pitanja",new Set([60,17,30,40,22,39,61,11,92])]
   ]);
+  const NEW_QUESTION_IDS = new Set([114,115,116,117,118,119,120,121,122,123]);
 
   const $ = id => document.getElementById(id);
   const state = {
@@ -1086,10 +1092,11 @@
     for (const [index,q] of BANK.entries()) {
       const item=document.createElement('details'); item.className='question-list-item';
       const type=q.type==='multiple'?'više tačnih odgovora':'jedan tačan odgovor';
+      const newBadge=NEW_QUESTION_IDS.has(q.id)?'<span class="question-list-new">NOVO</span>':'';
       item.innerHTML=`
         <summary>
           <span class="question-list-number">${index+1}.</span>
-          <span>${escapeHtml(q.q)}<span class="question-list-meta">${escapeHtml(q.lesson)} · ${type}</span></span>
+          <span>${escapeHtml(q.q)}${newBadge}<span class="question-list-meta">${escapeHtml(q.lesson)} · ${type}</span></span>
         </summary>
         <div class="question-list-answer">
           <div class="response-label">Tačan odgovor</div>
