@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="bs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ispitni sistem</title>
+  <style>
+    :root {
+      --bg:#08101b; --panel:#111c2c; --panel2:#17253a; --line:#2b3b52;
+      --text:#f2f6fb; --muted:#aab8ca; --cyan:#52d3f6; --blue:#3487f4;
+      --good:#47cf73; --good-bg:#102f20; --bad:#ff716c; --bad-bg:#371719;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+      background:
+        radial-gradient(900px 500px at 10% -5%,rgba(52,135,244,.22),transparent 62%),
+        radial-gradient(850px 500px at 95% 0%,rgba(71,207,115,.13),transparent 58%),var(--bg);
+    }
+    button,input { font:inherit; }
+    .wrap { width:min(1020px,calc(100% - 28px)); margin:0 auto; padding:24px 0 50px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
+    h1 { margin:0 0 6px; font-size:clamp(22px,4vw,34px); line-height:1.15; }
+    h2 { margin:0 0 8px; font-size:21px; }
+    .sub,.mini { color:var(--muted); }
+    .sub { line-height:1.5; }
+    .mini { font-size:13px; line-height:1.45; }
+    .card {
+      border:1px solid var(--line); border-radius:18px; padding:20px;
+      background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));
+      box-shadow:0 16px 45px rgba(0,0,0,.32);
+    }
+    .row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    .between { justify-content:space-between; }
+    .pill {
+      display:inline-flex; align-items:center; gap:7px; min-height:34px; padding:6px 10px;
+      border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:13px;
+      background:rgba(255,255,255,.025);
+    }
+    .exam-pill { border-color:#d7a52c; background:rgba(215,165,44,.14); color:#ffe39a; font-weight:950; letter-spacing:.8px; }
+    .btn {
+      border:1px solid var(--line); border-radius:12px; padding:10px 14px; cursor:pointer;
+      color:var(--text); background:rgba(255,255,255,.06); font-weight:750;
+    }
+    .btn:hover { border-color:#547093; transform:translateY(-1px); }
+    .btn:disabled { opacity:.46; cursor:not-allowed; transform:none; }
+    .primary { border-color:#3c92c8; background:linear-gradient(180deg,rgba(82,211,246,.26),rgba(52,135,244,.16)); }
+    .success { border-color:#2c9b54; background:linear-gradient(180deg,rgba(71,207,115,.25),rgba(71,207,115,.11)); }
+    .danger { border-color:#a94343; background:rgba(255,113,108,.12); }
+    .setup-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px; }
+    .box { border:1px solid var(--line); border-radius:14px; padding:14px; background:rgba(0,0,0,.12); }
+    .lesson-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .lesson {
+      display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border:1px solid var(--line);
+      border-radius:10px; color:#dce7f3; background:rgba(255,255,255,.025); cursor:pointer;
+    }
+    input { accent-color:var(--cyan); }
+    .toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
+    .progress { height:9px; margin:14px 0 20px; overflow:hidden; border:1px solid var(--line); border-radius:999px; background:#0a1422; }
+    .bar { width:0; height:100%; background:linear-gradient(90deg,var(--blue),var(--good)); transition:width .2s ease; }
+    .question { font-size:clamp(18px,3vw,24px); line-height:1.38; margin:0 0 16px; }
+    .options { display:grid; gap:10px; }
+    .option {
+      display:grid; grid-template-columns:24px 32px 1fr auto; gap:9px; align-items:start; padding:12px 13px;
+      border:1px solid var(--line); border-radius:13px; background:rgba(255,255,255,.035); cursor:pointer;
+    }
+    .option:hover { border-color:#527095; background:rgba(255,255,255,.055); }
+    .option input { margin-top:4px; transform:scale(1.12); }
+    .key { font-weight:850; color:#c8d6e6; }
+    .option-text { line-height:1.42; }
+    .option.answer-correct { border-color:#3fbd68; background:rgba(47,166,86,.14); }
+    .option.answer-wrong { border-color:#d94a45; background:rgba(204,55,50,.13); }
+    .option.answer-correct:hover { border-color:#3fbd68; background:rgba(47,166,86,.14); }
+    .option.answer-wrong:hover { border-color:#d94a45; background:rgba(204,55,50,.13); }
+    .result-mark { align-self:center; justify-self:end; font-size:25px; font-weight:950; line-height:1; }
+    .answer-correct .result-mark { color:#55dc7c; }
+    .answer-wrong .result-mark { color:#ff625c; }
+    .feedback { margin-top:15px; padding:15px; border:1px solid var(--line); border-radius:14px; }
+    .feedback.good { border-color:rgba(71,207,115,.55); background:var(--good-bg); }
+    .feedback.bad { border-color:rgba(255,113,108,.58); background:var(--bad-bg); }
+    .verdict { font-size:19px; font-weight:900; }
+    .correct-answer { margin-top:10px; color:#eaffef; font-size:17px; line-height:1.55; font-weight:800; }
+    .answer-chip {
+      display:inline-block; max-width:100%; margin-top:4px; padding:7px 10px; border-radius:9px;
+      border:1px solid rgba(71,207,115,.5); background:rgba(71,207,115,.14); color:#f1fff4;
+      font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:15px; line-height:1.45; white-space:normal;
+    }
+    .explain { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.12); color:#c7d4e3; line-height:1.5; }
+    .footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:18px; padding-top:15px; border-top:1px solid var(--line); }
+    .score { font-size:clamp(30px,7vw,54px); font-weight:950; letter-spacing:-1.5px; margin:8px 0; }
+    .results { display:grid; gap:12px; margin-top:16px; }
+    .missed { border:1px solid rgba(255,113,108,.4); border-radius:14px; padding:14px; background:rgba(255,113,108,.07); }
+    .missed-title { font-weight:850; line-height:1.45; }
+    .hidden { display:none !important; }
+    @media (max-width:720px) {
+      .setup-grid { grid-template-columns:1fr; }
+      .lesson-grid { grid-template-columns:1fr; }
+      .card { padding:15px; }
+      .option { grid-template-columns:22px 29px 1fr auto; padding:11px 10px; }
+      .top { flex-direction:column; }
+      .btn { flex-grow:1; }
+    }
+  </style>
+  <style>
+    :root {
+      --bg:#d9dde1; --panel:#ffffff; --panel2:#f4f5f6; --line:#c4c9ce;
+      --text:#263746; --muted:#657582; --cyan:#286dc0; --blue:#1768bd;
+      --good:#25874a; --good-bg:#e8f5ec; --bad:#c43a32; --bad-bg:#fbeceb;
+    }
+    body {
+      background:linear-gradient(#eef0f2,#d9dde1 240px,#cfd4d8);
+      color:var(--text); font-family:Arial,Helvetica,sans-serif;
+    }
+    .wrap { width:min(1080px,calc(100% - 24px)); padding:14px 0 34px; }
+    .top {
+      align-items:center; margin:0; padding:13px 18px; color:#fff;
+      background:linear-gradient(#377fbc,#2466a1); border:1px solid #195484;
+      box-shadow:0 2px 7px rgba(0,0,0,.22);
+    }
+    .top h1 { margin:0; font-size:22px; font-weight:700; }
+    .top .sub { display:none; }
+    .top .pill { border-color:rgba(255,255,255,.45); color:#fff; background:rgba(0,0,0,.08); }
+    .card {
+      margin-top:0; border:1px solid #aeb5bb; border-radius:0; padding:24px;
+      background:#fff; box-shadow:0 3px 11px rgba(0,0,0,.22);
+    }
+    #menuCard { margin-top:14px; }
+    h2 { color:#28678f; }
+    .box { border:1px solid #c7ccd1; border-radius:2px; background:#f8f9fa; }
+    .lesson { border:1px solid #c7ccd1; border-radius:1px; color:#273746; background:#fff; }
+    .pill { border-radius:2px; color:#435665; background:#f6f7f8; }
+    .btn {
+      min-width:112px; border:1px solid #15569c; border-radius:1px; padding:9px 18px;
+      color:#fff; background:linear-gradient(#2878cf,#1462b6); font-weight:700;
+      box-shadow:inset 0 1px rgba(255,255,255,.3);
+    }
+    .btn:hover { border-color:#0c4785; background:linear-gradient(#3186df,#176bc2); transform:none; }
+    .btn:disabled { color:#e6e6e6; background:#8ca7be; border-color:#708ba2; }
+    .primary,.success,.danger { border-color:#15569c; background:linear-gradient(#2878cf,#1462b6); }
+    #quizCard { min-height:600px; padding:22px 30px 18px; }
+    #quizCard .toolbar { min-height:30px; justify-content:flex-start; }
+    #quizCard .toolbar .row { gap:0; }
+    #quizCard .toolbar .pill { display:none; border:0; padding:0; background:transparent; }
+    #quizCard #counterPill {
+      display:inline-flex; min-height:0; color:#28678f; font-size:18px; font-weight:700;
+    }
+    #quizCard #examPill { display:inline-flex; margin-left:auto; padding:4px 8px; }
+    .exam-pill { border:1px solid #be8c20 !important; color:#8a5b00 !important; background:#fff4cf !important; }
+    #quizCard .progress { height:3px; margin:7px 0 12px; border:0; border-radius:0; background:#d9dde1; }
+    #quizCard .bar { background:#2a74bd; }
+    .question { color:#28678f; font-size:19px; font-weight:700; margin:0 0 22px; }
+    .options { gap:0; border-top:1px solid #e0e2e4; }
+    .option {
+      min-height:48px; grid-template-columns:38px minmax(0,1fr) 34px auto; gap:8px;
+      align-items:center; padding:9px 8px; border:0; border-bottom:1px solid #e0e2e4;
+      border-radius:0; background:#fff;
+    }
+    .option:hover { border-color:#e0e2e4; background:#f3f7fb; }
+    .option .key { grid-column:1; grid-row:1; justify-self:center; color:#222; font-size:15px; font-weight:400; }
+    .option .option-text { grid-column:2; grid-row:1; color:#273746; font-size:16px; }
+    .option input { grid-column:3; grid-row:1; justify-self:center; margin:0; transform:scale(1.25); accent-color:#1768bd; }
+    .option .result-mark { grid-column:4; grid-row:1; }
+    .option.answer-correct { border-color:#9acda8; background:#e8f5ec; }
+    .option.answer-wrong { border-color:#e3aaa6; background:#fbeceb; }
+    .feedback { border-radius:1px; }
+    .footer {
+      justify-content:flex-start; align-items:center; flex-wrap:nowrap; gap:9px;
+      margin-top:42px; padding-top:14px; border-top:1px solid #cfd3d6;
+    }
+    .footer .row { display:contents; }
+    .footer .btn { min-width:120px; font-size:17px; }
+    #clearAnswerBtn { order:1; }
+    #prevBtn { order:2; }
+    #questionJump {
+      order:3; width:120px; height:39px; padding:4px 10px; border:1px solid #aab1b7;
+      color:#222; background:#fff; font-size:17px;
+    }
+    #nextBtn { order:4; }
+    #finishBtn { order:5; margin-left:auto; }
+    #resultCard { margin-top:14px; }
+    .score { color:#1768bd; }
+    .missed { border-radius:1px; background:#fff4f3; }
+    .answer-chip { border-radius:1px; color:#174e2b; background:#e8f5ec; }
+    @media (max-width:720px) {
+      .wrap { width:100%; padding:0; }
+      .top { padding:11px 12px; }
+      .top h1 { font-size:18px; }
+      .card,#quizCard { padding:16px 12px; }
+      .footer { flex-wrap:wrap; }
+      #finishBtn { margin-left:0; }
+      .footer .btn { min-width:88px; flex:1; }
+      #questionJump { width:92px; }
+    }
+  </style>
+  <style>
+    html,body { min-height:100%; background:#fff; }
+    body { color:#111; font-family:Arial,Helvetica,sans-serif; font-size:12px; }
+    .wrap { width:min(760px,100%); margin:0 auto; padding:0; }
+    .top { display:none; }
+    .card {
+      margin:0; padding:16px 20px; border:0; border-radius:0;
+      background:#fff; box-shadow:none;
+    }
+    #menuCard,#resultCard { margin:0; padding-top:28px; }
+    #menuCard h2,#resultCard h2 { color:#008fe8; }
+    #menuCard .box { border:0; background:#fff; padding:10px 0; }
+    #menuCard .lesson { border:0; background:#fff; padding:5px 2px; }
+    #menuCard .pill { border:0; background:#fff; }
+    #quizCard {
+      width:100%; min-height:335px; padding:15px 20px 16px;
+      border-top:1px solid #cfd4d7;
+    }
+    #quizCard .toolbar,#quizCard .progress { display:none; }
+    .question {
+      margin:0 0 28px; padding:0; color:#0095e8;
+      font-size:13px; line-height:1.25; font-weight:700;
+    }
+    .options {
+      width:min(410px,calc(100% - 24px)); margin:0 auto; gap:0;
+      border:0;
+    }
+    .option {
+      min-height:29px; grid-template-columns:26px minmax(0,1fr) 28px auto;
+      gap:8px; padding:4px 0; border:0; border-radius:0; background:#fff;
+      font-size:12px;
+    }
+    .option:hover { border:0; background:#fff; }
+    .option .key {
+      grid-column:1; justify-self:start; color:#111;
+      font-size:12px; font-weight:400;
+    }
+    .option .option-text { grid-column:2; color:#111; font-size:12px; line-height:1.25; }
+    .option input {
+      grid-column:3; width:14px; height:14px; margin:0; justify-self:end;
+      transform:none; accent-color:#087ee3;
+    }
+    .option .result-mark { grid-column:4; font-size:16px; }
+    .option.answer-correct,.option.answer-wrong,
+    .option.answer-correct:hover,.option.answer-wrong:hover {
+      border:0; background:#fff;
+    }
+    .feedback {
+      width:min(610px,100%); margin:12px auto 0; padding:9px 10px;
+      border-width:1px; border-radius:0; font-size:12px;
+    }
+    .verdict { font-size:13px; }
+    .explain { margin-top:6px; padding-top:6px; line-height:1.35; }
+    .footer {
+      width:100%; justify-content:center; align-items:center; flex-wrap:nowrap;
+      gap:9px; margin:38px 0 0; padding:0; border:0;
+    }
+    .footer .btn {
+      flex:0 0 100px; min-width:100px; height:29px; padding:3px 10px;
+      border:1px solid #0875cc; border-radius:0; color:#fff;
+      background:#1086eb; box-shadow:none; font-size:13px; font-weight:400;
+    }
+    .footer .btn:hover { border-color:#0568b8; background:#087ce0; }
+    #questionJump {
+      flex:0 0 100px; width:100px; height:29px; padding:2px 8px;
+      border:1px solid #aeb5ba; border-radius:0; color:#111; background:#fff;
+      font-size:13px;
+    }
+    #finishBtn { flex-basis:100px; margin-left:0; }
+    #resultCard .missed { border-width:0 0 1px; background:#fff; }
+    #resultCard .progress { border-radius:0; }
+    @media (max-width:560px) {
+      .card,#quizCard { padding:12px 10px; }
+      .question { margin-bottom:20px; }
+      .options { width:100%; }
+      .footer { gap:5px; margin-top:28px; }
+      .footer .btn { flex-basis:76px; min-width:76px; padding:3px 5px; }
+      #questionJump { flex-basis:70px; width:70px; }
+    }
+  </style>
+  <style>
+    body::before {
+      content:""; position:fixed; z-index:10; top:0; left:0; right:0;
+      height:5px; background:#078fe9;
+    }
+    .wrap {
+      width:min(980px,100%); min-height:100vh; padding:18px 0;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .card { width:100%; }
+    #quizCard { min-height:0; padding:22px 30px; border-top:0; }
+    .question { margin-bottom:35px; font-size:18px; line-height:1.3; }
+    .options { width:min(590px,calc(100% - 30px)); }
+    .option {
+      min-height:39px; grid-template-columns:34px minmax(0,1fr) 36px auto;
+      gap:10px; padding:7px 0; font-size:16px;
+    }
+    .option .key,.option .option-text { font-size:16px; }
+    .option input { width:18px; height:18px; }
+    .option .result-mark { font-size:20px; }
+    .footer { gap:11px; margin-top:50px; }
+    .footer .btn {
+      flex-basis:130px; min-width:130px; height:39px; padding:5px 14px;
+      font-size:16px;
+    }
+    #questionJump {
+      flex-basis:130px; width:130px; height:39px; padding:4px 10px;
+      font-size:16px;
+    }
+    #finishBtn { flex-basis:130px; }
+    .feedback { font-size:15px; }
+    .verdict { font-size:17px; }
+    @media (max-width:760px) {
+      .wrap { min-height:100vh; padding:14px 0; }
+      #quizCard { padding:18px 14px; }
+      .question { margin-bottom:24px; font-size:16px; }
+      .options { width:100%; }
+      .option { min-height:35px; font-size:14px; }
+      .option .key,.option .option-text { font-size:14px; }
+      .footer { gap:5px; margin-top:32px; flex-wrap:wrap; }
+      .footer .btn { flex-basis:92px; min-width:92px; height:34px; font-size:14px; }
+      #questionJump { flex-basis:82px; width:82px; height:34px; font-size:14px; }
+      #finishBtn { flex-basis:110px; }
+    }
+  </style>
+  <style>
+    body::before { display:none; }
+    .exam-topbar {
+      position:fixed; z-index:20; top:0; left:0; right:0; height:100px;
+      background:#29292e; border-bottom:6px solid #078fe9;
+      box-shadow:0 1px 3px rgba(0,0,0,.28);
+    }
+    #examTimer {
+      position:absolute; right:28px; bottom:11px; color:#fff;
+      font-size:14px; font-weight:700; letter-spacing:.4px;
+    }
+    body.quiz-active { background:#f4f4f4; }
+    body.quiz-active .wrap { min-height:100vh; padding-top:112px; }
+    body.quiz-active #quizCard { background:#fff; }
+    #finishBtn {
+      position:fixed; z-index:30; top:20px; right:22px;
+      width:112px; min-width:112px; height:28px; margin:0;
+      font-size:13px;
+    }
+    body.quiz-active #examTimer { right:35px; }
+    body.quiz-active #finishBtn { right:22px; }
+    #quizCard .footer { padding-right:0; }
+    .feedback,.feedback .explain { color:#263746; }
+    .feedback.good .verdict { color:#18763c; }
+    .feedback.bad .verdict { color:#b4232b; }
+    #resultCard {
+      width:100%; max-width:none; min-height:520px; padding:42px 30px;
+      text-align:center; background:#fff;
+    }
+    #resultCard .result-summary { display:grid; justify-items:center; gap:24px; }
+    #resultCard h2 { margin:0; color:#46515a; font-size:22px; }
+    #resultCard .result-facts {
+      display:grid; justify-items:start; gap:10px; color:#111;
+      font-size:16px; line-height:1.45; text-align:left;
+    }
+    #resultCard .score {
+      display:inline; margin:0; color:#111; font-size:16px;
+      font-weight:400; letter-spacing:0;
+    }
+    #resultCard #scoreDetails { color:#111; }
+    #resultCard .result-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
+    #resultCard .result-actions .btn { min-width:150px; height:38px; border-radius:0; font-size:15px; }
+    #resultCard #toggleMistakesBtn { min-width:230px; }
+    #mistakesPanel { width:100%; text-align:left; }
+    #mistakesPanel h2 { text-align:center; }
+    #results { gap:20px; }
+    #results .missed {
+      padding:20px 22px; border:1px solid #d9dee2; background:#fff;
+      box-shadow:0 2px 7px rgba(0,0,0,.06);
+    }
+    #results .missed-title {
+      margin-bottom:16px; color:#111; font-size:17px; line-height:1.4;
+    }
+    .response-block { margin-top:14px; }
+    .response-label {
+      margin-bottom:7px; color:#43515d; font-size:14px; font-weight:700;
+    }
+    .correct-answer .response-label { color:#24733d; }
+    .answer-list {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:7px;
+    }
+    .answer-item {
+      display:grid; grid-template-columns:34px minmax(0,1fr); gap:7px;
+      align-items:start; padding:9px 11px; color:#263746; font-size:14px;
+      line-height:1.4; border:1px solid #ccd5dc; background:#f6f8fa;
+    }
+    .answer-letter { font-weight:800; }
+    .correct-list .answer-item {
+      border-color:#8acb9c; color:#174f2a; background:#eef9f1;
+    }
+    .chosen-list .answer-item { border-left:4px solid #6d8497; }
+    .empty-answer {
+      padding:9px 11px; color:#7a3434; border:1px solid #dfb5b2;
+      background:#fff5f4; font-size:14px;
+    }
+    #results .correct-answer { color:#174f2a; font-size:14px; font-weight:400; }
+    #results .explain {
+      margin-top:16px; padding-top:12px; color:#4d5e6d; font-size:14px;
+      line-height:1.5; border-top:1px solid #dfe3e6;
+    }
+    @media (min-width:700px) {
+      #finishBtn { right:34px; }
+      #examTimer { right:47px; }
+    }
+    @media (max-width:560px) {
+      .exam-topbar { height:82px; border-bottom-width:5px; }
+      body.quiz-active .wrap { padding-top:92px; }
+      #finishBtn { top:13px; right:10px; width:96px; min-width:96px; height:25px; }
+      #examTimer { right:17px; bottom:8px; font-size:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="exam-topbar hidden" id="examTopbar"><span id="examTimer">00:00:00</span></div>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Provjerena ispitna pitanja</h1>
+        <div class="sub">Pitanja su izdvojena iz ispitnih screenshotova i dostavljenih dokumenata. Tačni odgovori su provjereni u skriptama; nejasna i nepotvrđena pitanja nisu uključena.</div>
+      </div>
+      <span class="pill" id="bankCount"></span>
+    </header>
+
+    <section class="card" id="menuCard">
+      <h2>Glavni meni</h2>
+      <div class="sub">Izaberi oblasti, a zatim pokreni sva pitanja ili nasumičnih 25.</div>
+      <div class="setup-grid">
+        <div class="box">
+          <div class="row between"><strong>Oblasti / lekcije</strong><span class="mini" id="selectedCount"></span></div>
+          <div class="row" style="margin-top:9px">
+            <button class="btn" id="selectAllBtn" type="button">Označi sve</button>
+            <button class="btn" id="clearAllBtn" type="button">Poništi sve</button>
+          </div>
+          <div class="lesson-grid" id="lessonGrid"></div>
+        </div>
+        <div class="box">
+          <strong>Postavke testa</strong>
+          <div style="display:grid;gap:10px;margin-top:12px">
+            <label class="pill"><input type="checkbox" id="shuffleQuestions" checked> Nasumičan redoslijed pitanja</label>
+            <label class="pill"><input type="checkbox" id="shuffleAnswers" checked> Nasumičan redoslijed odgovora</label>
+          </div>
+          <div class="row" style="margin-top:18px">
+            <button class="btn primary" id="startAllBtn" type="button">Sva izabrana pitanja</button>
+            <button class="btn success" id="start25Btn" type="button">Random 25 pitanja</button>
+          </div>
+          <div class="mini" style="margin-top:12px">Ako završiš ranije, neodgovorena pitanja računaju se kao netačna i procenat se računa prema cijelom pokrenutom testu.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="quizCard">
+      <div class="toolbar">
+        <div class="row">
+          <span class="pill" id="counterPill"></span>
+          <span class="pill" id="lessonPill"></span>
+          <span class="pill" id="typePill"></span>
+          <span class="pill" id="answeredPill"></span>
+        </div>
+        <span class="pill exam-pill hidden" id="examPill" title="Pitanje i svi ponuđeni odgovori potvrđeni su na fotografiji ispita">ISPITNI</span>
+      </div>
+      <div class="progress"><div class="bar" id="progressBar"></div></div>
+      <h2 class="question" id="questionText"></h2>
+      <div class="options" id="options"></div>
+      <div class="feedback hidden" id="feedback"></div>
+      <div class="footer">
+        <div class="row">
+          <button class="btn" id="clearAnswerBtn" type="button">Poništi</button>
+          <button class="btn" id="prevBtn" type="button">&lt;&lt;</button>
+          <select id="questionJump" aria-label="Idi na pitanje"></select>
+          <button class="btn" id="nextBtn" type="button">&gt;&gt;</button>
+        </div>
+        <button class="btn danger" id="finishBtn" type="button">Završi test</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="resultCard">
+      <div class="result-summary">
+        <h2>Rezultat</h2>
+        <div class="result-facts">
+          <div><strong>Predmet</strong> Razvoj softvera</div>
+          <div><strong>Trajanje</strong> 60 min.</div>
+          <div><strong>Početak</strong> <span id="resultStart"></span></div>
+          <div><strong>Kraj</strong> <span id="resultEnd"></span></div>
+          <div><strong>Osvojeni procenat</strong> <span id="score"></span></div>
+          <div id="scoreDetails"></div>
+        </div>
+        <div class="result-actions">
+          <button class="btn" id="toggleMistakesBtn" type="button">Prikaži pogrešne odgovore</button>
+          <button class="btn primary" id="menuBtn" type="button">Nazad</button>
+        </div>
+      </div>
+      <div class="hidden" id="mistakesPanel">
+        <h2 style="margin-top:34px">Netačna i neodgovorena pitanja</h2>
+        <div class="results" id="results"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  const BANK = [
+    {id:1,lesson:"Lekcija 1 — Osnove",type:"multiple",q:"U grupu preskriptivnih procesnih modela spadaju:",o:["Kanban","Inkrementalni","Crystal","Scrum","Spiralni"],c:[1,4],e:"Skripta navodi model vodopada, inkrementalni i spiralni model kao preskriptivne. Među ponuđenim odgovorima tačni su inkrementalni i spiralni."},
+    {id:2,lesson:"Lekcija 1 — Osnove",type:"single",q:"Metoda je:",o:["kombinacija alata i metoda koji zajedno proizvode dati proizvod","instrument koji omogućava kvalitetnije obavljanje aktivnosti","pristup ili filozofija razvoja softvera","formalni postupak za postizanje nekog rezultata"],c:[3],e:"Metoda (tehnika) je formalni postupak za postizanje nekog rezultata."},
+    {id:3,lesson:"Lekcija 1 — Osnove",type:"single",q:"Procedura je kombinacija:",o:["alata i metoda koji u međusobnom skladu proizvode dati proizvod","metoda i paradigmi koje opisuju poslovno okruženje","tehnika i zahtjeva koji definišu interfejs","procesa i modela koji procjenjuju rizik"],c:[0],e:"Procedura je kombinacija alata i metoda koji u međusobnom skladu proizvode dati proizvod."},
+    {id:4,lesson:"Lekcija 1 — Osnove",type:"single",q:"Paradigma predstavlja:",o:["formalni postupak za postizanje rezultata","instrument za kvalitetnije obavljanje aktivnosti","pristup ili filozofiju razvoja softvera","kombinaciju alata i metoda"],c:[2],e:"U skripti je paradigma definisana kao pristup ili filozofija razvoja softvera."},
+    {id:5,lesson:"Lekcija 1 — Osnove",type:"multiple",q:"Kvalitet softvera se posmatra kroz:",o:["kvalitet proizvoda","kvalitet postupka izrade (procesa)","kvalitet poslovnog okruženja za koje je proizvod namijenjen","kvalitet pojedinačnog alata","broj korištenih paradigmi","količinu dokumentacije"],c:[0,1,2],e:"Skripta izdvaja kvalitet proizvoda, kvalitet izrade/procesa i kvalitet poslovnog okruženja."},
+
+    {id:6,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Slovo I u konceptu INVEST znači da korisnička priča:",o:["nije zavisna od ostalih u kontekstu razvoja i isporučivosti","mora sadržavati kompletan tehnički dizajn","mora biti implementirana u jednom danu","ne smije biti predmet diskusije"],c:[0],e:"I = Independent: korisnička priča nije zavisna od ostalih u kontekstu razvoja i isporučivosti."},
+    {id:7,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Slovo N u konceptu INVEST znači da:",o:["korisnička priča ne donosi poslovnu vrijednost","svi zahtjevi moraju biti predmet diskusije i podložni promjenama","obim priče mora biti prepoznatljiv","priča mora biti nezavisna od svih testova"],c:[1],e:"N = Negotiable: zahtjevi moraju biti podvrgnuti diskusiji i biti podložni promjenama."},
+    {id:8,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Slovo E u konceptu INVEST podrazumijeva da:",o:["obim korisničke priče mora biti prepoznatljiv","priča mora biti isporučena bez testiranja","priča mora biti potpuno nezavisna od korisnika","svaka priča mora trajati tačno jedan sprint"],c:[0],e:"E = Estimable: obim korisničke priče mora biti prepoznatljiv kako bi je bilo moguće procijeniti."},
+    {id:9,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Epic je:",o:["jedan mali zadatak koji se završava za nekoliko sati","funkcionalnost sastavljena od većeg broja korisničkih priča koja često zahtijeva nekoliko sprintova","lista grešaka pronađenih tokom testiranja","konačan cilj samo jednog dnevnog sastanka"],c:[1],e:"Prema januarskoj skripti, Epic obuhvata veći broj korisničkih priča i često zahtijeva nekoliko sprintova."},
+    {id:10,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"multiple",q:"Odaberite rezultate/izlaze aktivnosti planiranja sprinta:",o:["DoR","Kapacitet tima","Cilj sprinta","Dužina trajanja sprinta","DoD","Sprint backlog"],c:[2,5],e:"Rezultat planiranja trebaju biti jasno definisani cilj sprinta i stavke sprint backloga."},
+    {id:11,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"multiple",q:"Odaberite zaduženja članova razvojnog tima tokom aktivnosti planiranja sprinta:",o:["definisanje cilja sprinta","određivanje kapaciteta tima","razumijevanje pojedinih zahtjeva","procjena individualnih kapaciteta","definisanje prioriteta korisničkih priča","osiguranje prisustva svih potrebnih pojedinaca"],c:[2,3],e:"Dostavljeni ključ navodi razumijevanje pojedinih zahtjeva i procjenu individualnih kapaciteta; skripta ih podržava kroz razradu priča, procjenu aktivnosti i kapaciteta."},
+    {id:12,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Koje je zaduženje Product Ownera tokom planiranja sprinta?",o:["Kompletnom timu prezentuje najprioritetnije funkcionalnosti product backloga","Samostalno procjenjuje individualni kapacitet svakog programera","Piše jedinične testove za sve zadatke sprinta","Određuje tehničku arhitekturu bez konsultacije s timom"],c:[0],e:"Skripta direktno navodi da Product Owner kompletnom timu prezentuje najprioritetnije funkcionalnosti product backloga."},
+    {id:14,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"multiple",q:"Ko bi trebao učestvovati u analizi rezultata sprinta?",o:["Razvojni tim","Scrum Master","Product Owner","Stakeholderi, ako je potrebno","Isključivo projekt menadžer","Samo predstavnik korisničke podrške"],c:[0,1,2,3],e:"Januarska skripta navodi razvojni tim, Scrum Mastera, Product Ownera i stakeholder-e kada je potrebno."},
+    {id:15,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Retrospektiva sprinta prvenstveno služi za:",o:["analizu mogućnosti za poboljšanje načina rada","odabir programskog jezika za cijeli projekat","demonstraciju gotovih funkcionalnosti naručiocu","definisanje svih zahtjeva budućih verzija"],c:[0],e:"Tokom retrospektive prepoznaju se nedostaci i analiziraju mogućnosti za poboljšanje."},
+    {id:16,lesson:"Lekcija 6 — XP",type:"multiple",q:"Odaberite praktične principe ekstremnog programiranja (XP):",o:["održiv tempo rada","programiranje u paru","metafore","kolektivna svojina","jednostavan dizajn","stalno testiranje","obimna dokumentacija prije softvera","zabrana komunikacije s klijentom","isključivo godišnje verzije"],c:[0,1,2,3,4,5],e:"Skripta među praktičnim principima XP-a navodi održiv tempo, programiranje u paru, metafore, kolektivnu svojinu, jednostavan dizajn i stalno testiranje."},
+
+    {id:17,lesson:"Lekcija 7 — Git",type:"multiple",q:"Odaberite tačne tvrdnje koje se odnose na Git komande.",o:["git pull će promijeniti vrijednost HEAD pokazivača","git fetch ne integriše preuzete promjene u radne fajlove","git pull integriše preuzete promjene u radne fajlove","git fetch integriše preuzete promjene u radne fajlove","git pull ne integriše preuzete promjene u radne fajlove","git fetch će promijeniti vrijednost HEAD pokazivača"],c:[0,1,2],e:"Skripte potvrđuju: fetch preuzima bez integracije, pull preuzima i integriše, a januarska skripta navodi da pull mijenja HEAD."},
+    {id:18,lesson:"Lekcija 7 — Git",type:"single",q:"Koja Git komanda omogućava reorganizaciju historije commitova?",o:["git merge","git stash","git rebase","git status"],c:[2],e:"git rebase omogućava reorganizaciju historije commitova radi boljeg pregleda promjena."},
+    {id:19,lesson:"Lekcija 7 — Git",type:"single",q:"Komanda git diff:",o:["prikazuje razlike između commitova ili između radnog direktorija i staginga","briše posljednji commit i sve njegove promjene","preuzima promjene s udaljenog repozitorija","kreira novu granu i automatski prelazi na nju"],c:[0],e:"Skripta definiše git diff kao prikaz razlika između commitova ili između radnog direktorija i staginga."},
+    {id:20,lesson:"Lekcija 7 — Git",type:"single",q:"Komanda git commit:",o:["prikazuje samo status radnog direktorija","potvrđuje promjene i kreira commit s porukom koja opisuje izmjene","dodaje promjene iz radnog direktorija u staging","privremeno čuva nespremljene promjene"],c:[1],e:"git commit potvrđuje promjene i kreira commit s opisnom porukom."},
+    {id:21,lesson:"Lekcija 7 — Git",type:"single",q:"Komanda git add:",o:["dodaje promjene iz staginga nazad u radni direktorij","dodaje promjene iz radnog direktorija u staging kao pripremu za commit","spaja dvije grane bez commit-a","prikazuje historiju commitova"],c:[1],e:"git add prenosi odabrane promjene iz radnog direktorija u staging."},
+
+    {id:22,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Fazni razvoj podrazumijeva postojanje dva sistema:",o:["produkcioni i razvojni sistem","fazni i korisnički sistem","produkcioni i testni sistem","razvojni i demo sistem","razvojni i testni sistem"],c:[0],e:"Skripta za fazni razvoj navodi produkcioni i razvojni sistem."},
+    {id:23,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Proces možemo posmatrati kao niz definisanih koraka koji obuhvataju:",o:["aktivnosti","ograničenja","resurse","isključivo alate","samo metode","isključivo procedure"],c:[0,1,2],e:"Definicija procesa u skripti izričito navodi aktivnosti, ograničenja i resurse."},
+    {id:24,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Kako bi pratili realizaciju projekta, naručilac i razvojni tim koriste:",o:["aktivnosti i prekretnice","paradigme i procedure","isključivo izvještaj o troškovima","samo završnu dokumentaciju"],c:[0],e:"Skripta navodi da naručilac prati projekat pomoću aktivnosti i prekretnica."},
+    {id:25,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Latentno vrijeme predstavlja:",o:["ukupno vrijeme potrebno za završetak cijelog projekta","razliku između najkasnijeg i najranijeg vremena započinjanja aktivnosti","vrijeme od završetka aktivnosti do isporuke proizvoda","vrijeme rezervisano isključivo za testiranje"],c:[1],e:"Latentno vrijeme je razlika između najkasnijeg i najranijeg vremena započinjanja."},
+    {id:26,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Kontrola rizika uključuje:",o:["umanjenje rizika","planiranje rizika","razrješavanje rizika","identifikovanje rizika","analizu rizika","dodjeljivanje prioriteta riziku"],c:[0,1,2],e:"Procjena obuhvata identifikaciju, analizu i prioritete, dok kontrola rizika obuhvata umanjenje, planiranje i razrješavanje."},
+
+    {id:27,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"Odaberite obaveznu tehniku koju je potrebno koristiti prilikom prikupljanja zahtjeva:",o:["validacija poslovnih procesa naručioca","analiza potrošnje (troškova)","izrada pretpostavki","analiza scenarija","analiza specifikacije zahtjeva","verifikacija poslovnih procesa naručioca","analiza službene dokumentacije"],c:[6],e:"Dostavljeni ključ označava analizu službene dokumentacije; ona je i direktno navedena među tehnikama definisanja zahtjeva u skripti."},
+    {id:28,lesson:"Lekcija 10 — Zahtjevi",type:"multiple",q:"Odaberite tehnike definisanja zahtjeva:",o:["analiza službene dokumentacije","intervju","anketiranje","analiza scenarija","posmatranje","izrada pretpostavki","pravljenje i korištenje videozapisa","FAST tehnika","izrada prototipa","programiranje","isporuka sistema","regresiono testiranje"],c:[0,1,2,3,4,5,6,7,8],e:"Sve označene tehnike nalaze se u listi tehnika definisanja zahtjeva u skripti."},
+    {id:29,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"U okviru faze prikupljanja zahtjeva, validacijom se provjerava:",o:["da li je jedinične testove (unit tests) moguće primijeniti na sistemu koji se razvija","ništa od navedenog","aktuelno ponašanje ili demonstrira sličan sistem","koliko testni podaci odgovaraju onome što je potrebno testirati","koliko specifikacija odgovara onome što naručilac želi u finalnom proizvodu"],c:[4],e:"Skripta izričito kaže da se validacijom provjerava koliko specifikacija odgovara onome što naručilac želi u finalnom proizvodu."},
+    {id:30,lesson:"Lekcija 10 — Zahtjevi",type:"multiple",q:"Evidentiranje zahtjeva obuhvata:",o:["izvođenje zahtjeva","modeliranje zahtjeva","osiguravanje kvaliteta","dokumentovanje zahtjeva","programiranje sistema","isporuku sistema","održavanje sistema"],c:[0,1,2,3],e:"Skripta navodi četiri cjeline: izvođenje, modeliranje, osiguravanje kvaliteta i dokumentovanje zahtjeva."},
+    {id:31,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"Funkcionalni zahtjevi opisuju:",o:["obavezno ponašanje softvera u kontekstu neophodnih aktivnosti","samo troškove razvoja i održavanja","isključivo izgled korisničkog interfejsa","kratko vrijeme odziva, lakoću korištenja i pouzdanost"],c:[0],e:"Funkcionalni zahtjevi opisuju obavezno ponašanje softvera; kvalitativne karakteristike pripadaju nefunkcionalnim zahtjevima."},
+    {id:32,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"Procesno ograničenje predstavlja:",o:["unaprijed donesenu odluku koja ograničava moguća rješenja, npr. izbor platforme","ograničenje koje se odnosi na tehnike ili resurse koji se mogu koristiti u izgradnji sistema","opis obaveznog ponašanja softvera","karakteristiku kvaliteta koju rješenje mora posjedovati"],c:[1],e:"Procesno ograničenje odnosi se na tehnike ili resurse koji se smiju koristiti u izgradnji sistema."},
+    {id:33,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"Projektno ograničenje opisuje:",o:["unaprijed donesenu odluku koja ograničava skup mogućih rješenja, npr. izbor platforme ili interfejsa","ograničenje koje se odnosi samo na tehnike prikupljanja zahtjeva","kratko vrijeme odziva i visoku pouzdanost","reakciju sistema na svaki mogući ulaz"],c:[0],e:"Projektno ograničenje je ranije donesena odluka koja sužava skup rješenja, poput izbora platforme ili interfejsa."},
+
+    {id:34,lesson:"Lekcija 11 — SOLID",type:"single",q:"Slovo S u SOLID dizajnu znači:",o:["svakoj klasi dodjeljuje se samo jedno zaduženje","radna verzija komponente samo se proširuje","složeni interfejs se mora raščlaniti","zavisnosti se zasnivaju na apstrakciji"],c:[0],e:"S = Single Responsibility Principle: svakoj klasi dodjeljuje se samo jedno zaduženje."},
+    {id:35,lesson:"Lekcija 11 — SOLID",type:"single",q:"Slovo O u SOLID dizajnu znači:",o:["svakoj klasi dodjeljuje se samo jedno zaduženje","radna verzija komponente može se proširivati, ali ne i mijenjati","izvedena klasa mora zamijeniti baznu bez problema","zavisnosti se zasnivaju na konkretnim primjercima"],c:[1],e:"O = Open-Closed Principle: komponenta je otvorena za proširenje, a zatvorena za mijenjanje postojećeg sadržaja."},
+    {id:36,lesson:"Lekcija 11 — SOLID",type:"single",q:"Slovo L u SOLID dizajnu znači:",o:["izvedena klasa treba moći zamijeniti baznu bez izazivanja problema u radu","interfejs uvijek mora imati samo jednu metodu","komponenta se nikada ne smije proširiti","svaka zavisnost mora koristiti konkretan objekat"],c:[0],e:"L = Liskov Substitution Principle: izvedena klasa ne smije izazvati probleme kada se koristi umjesto bazne."},
+    {id:37,lesson:"Lekcija 11 — SOLID",type:"single",q:"Slovo I u SOLID dizajnu znači:",o:["kada interfejs postane previše složen, treba ga raščlaniti na specifičnije interfejse","svakoj klasi dodjeljuje se samo jedno zaduženje","radna verzija komponente ne smije se proširivati","izvedena klasa ne smije zamijeniti baznu"],c:[0],e:"I = Interface Segregation Principle: previše složen interfejs treba podijeliti na specifičnije interfejse."},
+    {id:38,lesson:"Lekcija 11 — SOLID",type:"single",q:"U okviru SOLID dizajna slovo D podrazumijeva da se",o:["svakoj komponenti dodjeljuje samo jedno zaduženje","izvedena klasa ponaša na način da ne uzrokuje probleme u radu ukoliko se koristi umjesto bazne klase","radna verzija komponenti može samo proširivati, a nikako i mijenjati","složeni interfejsi raščlanjuju na manje-specifičnije interfejse","zavisnosti i veze baziraju na apstrakciji, a ne na konkretnim primjerima"],c:[4],e:"D = Dependency Inversion Principle: zavisnosti i veze baziraju se na apstrakciji, ne na konkretnim primjercima."},
+
+    {id:39,lesson:"Lekcija 12 — Implementacija",type:"multiple",q:"U okviru faze implementacije softvera potrebno je voditi računa o?",o:["količini podataka koji se obrađuju","aspektima efikasnog radnog okruženja","ponovnoj iskoristivosti koda","mogućnosti nadogradnje","primjeni standarda","programiranju","minimiziranju kompleksnosti","prevenciji degradacije performansi softvera","verifikacijskim mehanizmima","interakciji sa drugim sistemima"],c:[2,3,4,6,8],e:"Minimiziranje kompleksnosti olakšava razumijevanje koda, standardi i verifikacijski mehanizmi čine ga dosljednijim i provjerljivijim, a ponovna iskoristivost i mogućnost nadogradnje olakšavaju buduće izmjene."},
+    {id:40,lesson:"Lekcija 12 — Implementacija",type:"multiple",q:"Standardima programiranja u fazi implementacije mogu se definisati:",o:["tehnike za kreiranje čitljivog koda","organizacija programskog koda","korištenje kontrolnih struktura","obrada izuzetaka","prevencija sigurnosnih propusta na nivou koda","dokumentovanje programskog koda","način korištenja resursa","prioritet product backloga","trajanje retrospektive"],c:[0,1,2,3,4,5,6],e:"Skripta ove stavke navodi kao sadržaj standarda koji se primjenjuju tokom programiranja."},
+    {id:41,lesson:"Lekcija 12 — Implementacija",type:"single",q:"Programiranje podrazumijeva:",o:["pisanje, testiranje, otklanjanje grešaka i održavanje koda koji računaru omogućava izvršavanje zadataka","isključivo crtanje dijagrama i modela","samo evidentiranje korisničkih zahtjeva","upravljanje budžetom i rokovima projekta"],c:[0],e:"Januarska skripta programiranje opisuje kao pisanje, testiranje, otklanjanje grešaka i održavanje koda."},
+
+    {id:42,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Odaberite predloške ponašanja",o:["Prototype","Bridge","Interpreter","Builder","Factory method","Adapter","Mediator"],c:[2,6],e:"Dostavljeni ključ i januarska skripta potvrđuju Interpreter i Mediator kao predloške ponašanja među ovim opcijama."},
+    {id:43,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Singleton predložak osigurava:",o:["postojanje samo jedne instance određene klase","automatsko kreiranje više instanci iste klase","spajanje dva nekompatibilna interfejsa","obavještavanje pretplaćenih posmatrača"],c:[0],e:"Singleton osigurava postojanje odnosno instanciranje samo jedne instance određene klase."},
+    {id:44,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Implementacija Singleton predloška zahtijeva:",o:["privatan ili zaštićen konstruktor","privatan statički atribut istog tipa kao klasa","javnu statičku funkciju za pristup instanci","javni konstruktor bez ograničenja","javni statički atribut koji svi mogu mijenjati","privatnu nestatičku funkciju kao jedini pristup"],c:[0,1,2],e:"Skripta navodi konstruktor ograničene vidljivosti, privatni statički atribut i javnu statičku pristupnu funkciju."},
+    {id:45,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Director klasa u Builder predlošku:",o:["konstruiše kompleksne objekte koristeći Builder interfejs","predstavlja konačni kompleksni proizvod","definiše postojeći interfejs koji treba prilagoditi","čuva listu pretplaćenih posmatrača"],c:[0],e:"Director konstruiše kompleksne objekte zahvaljujući Builder interfejsu."},
+    {id:46,lesson:"Lekcija 13 — Predlošci",type:"single",q:"U okviru Observer predloška, komponenta ConcreteObservable predstavlja",o:["klasu koja čuva i obavještava pretplaćene posmatrače","interfejs koji definiše operacije za obavještavanje posmatrača (Observer-a) o nastalim promjenama","konkretnu implementaciju posmatrača","ništa od navedenog","interfejs koji definiše operacije za pretplatu posmatrača (Observer-a) na određeni događaj"],c:[0],e:"Skripta jasno razlikuje uloge: ConcreteObservable je klasa koja čuva i obavještava pretplaćene posmatrače."},
+    {id:48,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Provjera strukture, analiza podataka i provjera redoslijeda se obavljaju u okviru",o:["funkcionalne analize koda","nefunkcionalne analize koda","statičke analize koda","dinamičke analize koda"],c:[2],e:"Dostavljeni ključ označava statičku analizu koda."},
+    {id:49,lesson:"Lekcija 14 — Testiranje",type:"multiple",q:"Odaberite tačne tvrdnje o analizi koda:",o:["statička analiza realizuje se dok se softver ne izvršava","dinamička analiza realizuje se tokom izvršavanja softvera","statička analiza zahtijeva da je sistem uvijek pokrenut","dinamička analiza izvodi se isključivo čitanjem neizvršenog koda"],c:[0,1],e:"Skripta razlikuje statičku analizu bez izvršavanja i dinamičku analizu u fazi izvršavanja softvera."},
+    {id:50,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Jedinično testiranje predstavlja:",o:["provjeru da li pojedinačne komponente, najčešće metode, ispravno rade sa očekivanim tipovima ulaza","provjeru saradnje svih sistemskih komponenti prema dizajnu","provjeru usklađenosti cijelog sistema sa zahtjevima naručioca","provjeru rada sistema nakon isporuke"],c:[0],e:"Jedinični test provjerava pojedinačne komponente ili metode sa očekivanim ulazima."},
+    {id:51,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Integraciono testiranje predstavlja:",o:["provjeru da li sistemske komponente sarađuju kako je opisano u specifikaciji dizajna","provjeru samo jedne metode sa različitim ulazima","provjeru rada nakon instalacije kod korisnika","poređenje sistema s hardverskim zahtjevima"],c:[0],e:"Integraciono testiranje provjerava saradnju sistemskih komponenti prema specifikaciji dizajna."},
+    {id:52,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Testiranje performansi podrazumijeva:",o:["testiranje pouzdanosti sistema uz postepeno povećavanje opterećenja dok ponašanje ne postane neprihvatljivo","provjeru samo jedne komponente sa očekivanim ulazima","provjeru usklađenosti sistema sa zahtjevima naručioca","potvrdu rada sistema nakon isporuke"],c:[0],e:"Opterećenje se postepeno povećava da bi se utvrdilo do koje granice sistem ostaje pouzdan i prihvatljivo reaguje. Ostale opcije opisuju jedinični test, test prihvatanja i instalacioni test."},
+    {id:53,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Test prihvatanja podrazumijeva:",o:["provjeru usklađenosti sistema s opisom zahtjeva naručioca","provjeru rada samo jedne metode","provjeru strukture izvornog koda bez izvršavanja","poređenje kapaciteta procesora i memorije"],c:[0],e:"Test prihvatanja provjerava usklađenost sistema s opisom zahtjeva naručioca."},
+    {id:54,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Instalacioni test potvrđuje:",o:["da sistem ispravno funkcioniše i nakon isporuke","da su sve metode napisane u istom stilu","da je product backlog pravilno sortiran","da se svi rizici mogu ukloniti"],c:[0],e:"Skripta definiše instalacioni test kao potvrdu da sistem ispravno funkcioniše i nakon isporuke."},
+    {id:55,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Regresioni test provjerava:",o:["da promjene na sistemu nisu izazvale greške u ranije ispravnom programskom kodu","da pojedinačna metoda prihvata svaki tip ulaza","da su svi zahtjevi evidentirani prije dizajna","da instalacija koristi dovoljno malo memorije"],c:[0],e:"Regresiono testiranje se koristi nakon promjena kako bi se provjerilo da ranije ispravan kod nije pokvaren."},
+    {id:56,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Pojam Seeding se odnosi na provjeru",o:["da li su kreirani testovi u stanju prepoznati sve planski uzrokovane greške","reagovanja sistema na slučajeve prisustva grešaka ili gubitka podataka","da promjene na sistemu kojim slučajem nisu uzrokovale greške u radu do tada ispravnog programskog koda","ništa od navedenog","ponašanja sistema prilikom interakcije sa drugim sistemima, servisima ili uređajima"],c:[0],e:"Planirano uzrokovanje grešaka (Seeding) prati kvalitet testova provjerom mogu li otkriti planski ubačene greške."},
+
+    {id:57,lesson:"Lekcija 15 — Održavanje",type:"single",q:"Funkcionalno održavanje podrazumijeva:",o:["promjene funkcionalnosti radi novih zahtjeva ili poboljšanja te ispravku grešaka koje utiču na funkcionalnost","isključivo nabavku novog hardvera","samo izradu korisničke dokumentacije bez izmjene sistema","brisanje svih postojećih funkcionalnosti prije svake nadogradnje"],c:[0],e:"Januarska skripta funkcionalno održavanje opisuje kao prilagođavanje funkcionalnosti novim zahtjevima/poboljšanjima i ispravku funkcionalnih grešaka."},
+    {id:58,lesson:"Lekcija 15 — Održavanje",type:"multiple",q:"Odaberite kategorije održavanja softvera:",o:["korektivno održavanje","adaptivno održavanje","preventivno održavanje","održavanje u cilju unapređenja","sistemsko održavanje","identifikacijsko održavanje","strukturalno održavanje"],c:[0,1,2,3],e:"Glavna skripta navodi korektivno, adaptivno, preventivno i održavanje u cilju unapređenja."},
+    {id:59,lesson:"Lekcija 15 — Održavanje",type:"single",q:"Korektivno održavanje predstavlja:",o:["modifikaciju softvera radi ispravke uočenih grešaka","modifikaciju zbog promjena u okruženju","izmjene radi sprečavanja grešaka prije njihove pojave","isključivo poboljšanje performansi bez otkrivenih grešaka"],c:[0],e:"Korektivno održavanje je modifikacija softvera zbog ispravke uočenih grešaka."},
+    {id:60,lesson:"Lekcija 15 — Održavanje",type:"multiple",q:"Održavanje softvera provodi se u cilju:",o:["ispravljanja uočenih grešaka","unapređenja dizajna","poboljšanja postojećih funkcionalnosti","omogućavanja interakcije s drugim softverom","identifikacije i eliminisanja sigurnosnih propusta","prevencije degradacije performansi","ukidanja svih budućih verzija","zabrane promjene zahtjeva"],c:[0,1,2,3,4,5],e:"Skripta navodi svih šest označenih ciljeva održavanja."},
+    {id:61,lesson:"Lekcija 15 — Održavanje",type:"multiple",q:"U aktivnosti reinženjeringa ubrajaju se:",o:["prevođenje programskog koda","obrnuti inženjering","modularizacija","reinženjering podataka","refaktorisanje korisničkih priča","planiranje sprinta","test prihvatanja"],c:[0,1,2,3],e:"Skripta navodi prevođenje koda, obrnuti inženjering, modularizaciju i reinženjering podataka."},
+    {id:62,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"multiple",q:"Odaberite osobe koje bi trebale prisustvovati aktivnosti planiranja sprinta:",o:["Predstavnik korisnika","Scrum master","Razvojni tim","Predstavnik Stakeholder-a","Projekt menadžer","Product owner"],c:[1,2,5],e:"Tačni učesnici su Scrum Master, razvojni tim i Product Owner. Formulacija i ponuđeni odgovori preneseni su sa screenshot-a ispita, a odgovor je dodatno potvrđen u postojećem HTML testu."},
+    {id:63,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Tokom analize rezultata sprinta mogu se identificirati nove stavke za product backlog.",o:["Ne","Da"],c:[1],e:"Skripta među aktivnostima analize rezultata sprinta navodi identifikaciju novih elemenata product backloga."},
+
+    {id:64,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Intuitivan introvert u komunikaciji:",o:["pita drugog","priznaje osjećaje","saopštava drugima","odlučuje logično"],c:[0,1],e:"Stari SI izričito navodi da intuitivan introvert priznaje osjećaje i pita drugog."},
+    {id:65,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Intuitivan ekstrovert u komunikaciji:",o:["pita drugog","priznaje osjećaje","saopštava drugima","odlučuje logično"],c:[1,2],e:"Stari SI navodi da intuitivan ekstrovert priznaje osjećaje i saopštava drugima."},
+    {id:66,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Racionalan introvert u komunikaciji:",o:["pita drugog","priznaje osjećaje","saopštava drugima","odlučuje logično"],c:[0,3],e:"Stari SI navodi da racionalan introvert odlučuje logično i pita drugog."},
+    {id:67,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Racionalan ekstrovert u komunikaciji:",o:["pita drugog","priznaje osjećaje","saopštava drugima","odlučuje logično"],c:[2,3],e:"Stari SI navodi da racionalan ekstrovert odlučuje logično i saopštava drugima."},
+    {id:68,lesson:"Lekcija 10 — Zahtjevi",type:"single",q:"Nefunkcionalni zahtjevi opisuju:",o:["obavezno ponašanje softvera i reakcije na ulaze","karakteristike kvaliteta koje softversko rješenje mora posjedovati","isključivo redoslijed implementacije funkcionalnosti","samo izbor platforme i interfejsa komponenti"],c:[1],e:"Stari SI nefunkcionalne zahtjeve definiše kao karakteristike kvaliteta, poput vremena odziva, lakoće korištenja, pouzdanosti i troškova održavanja."},
+    {id:69,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Šta podrazumijeva organizacija tima po principu „glavni programer“?",o:["svaki član je potpuno ravnopravan i sve odluke se donose glasanjem","jedna osoba je odgovorna za razvoj, prima izvještaje ostalih i ima posljednju riječ","naručilac samostalno donosi sve tehničke odluke","tim nema unaprijed određenu odgovornost za odluke"],c:[1],e:"U ovoj organizaciji glavni programer je potpuno odgovoran, ostali članovi mu podnose izvještaj i on ima posljednju riječ."},
+    {id:70,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Šta podrazumijeva organizacija tima po principu „bez egoizma“?",o:["svaki član tima je ravnopravan, a odluke se donose demokratski","jedan programer donosi sve odluke i kontroliše cijeli razvoj","samo analitičar smije predlagati izmjene","članovi tima rade bez međusobne komunikacije"],c:[0],e:"Stari SI opisuje strukturu bez egoizma kao ravnopravnu i demokratsku organizaciju tima."},
+    {id:71,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Koji procesni model smanjuje i kontroliše rizike?",o:["model vodopada","spiralni model","transformacioni model","fazni model"],c:[1],e:"Stari SI direktno navodi spiralni model kao model koji smanjuje i kontroliše rizike."},
+    {id:72,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Odaberite kreacijske predloške:",o:["Builder","Factory Method","Prototype","Singleton","Adapter","Observer","Mediator","Decorator"],c:[0,1,2,3],e:"Stari SI među kreacijske predloške svrstava Builder, Factory Method, Prototype i Singleton."},
+    {id:73,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Odaberite strukturalne predloške:",o:["Adapter","Bridge","Composite","Decorator","Facade","Flyweight","Proxy","Builder","Observer","Strategy"],c:[0,1,2,3,4,5,6],e:"Stari SI navodi Adapter, Bridge, Composite, Decorator, Facade, Flyweight i Proxy kao strukturalne predloške."},
+    {id:74,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Ključne komponente Adapter predloška su:",o:["ITarget (Target)","Adapter","Adaptee","Client","Director","Product","ConcreteObserver"],c:[0,1,2,3],e:"Stari SI kao komponente Adapter predloška navodi ITarget, Adapter, Adaptee i Client."},
+    {id:75,lesson:"Lekcija 13 — Predlošci",type:"single",q:"U Adapter predlošku ITarget (Target) komponenta:",o:["definiše specifični interfejs koji koristi klijent","predstavlja postojeći interfejs koji treba prilagoditi","prilagođava Adaptee konkretnom Target interfejsu","konstruiše kompleksni objekat"],c:[0],e:"ITarget definiše specifični interfejs koji koristi klijent."},
+    {id:76,lesson:"Lekcija 13 — Predlošci",type:"single",q:"U Adapter predlošku komponenta Adapter:",o:["prilagođava interfejs Adaptee konkretnom Target interfejsu","predstavlja postojeći interfejs koji treba prilagoditi","definiše operacije za pretplatu posmatrača","predstavlja kompleksni objekat"],c:[0],e:"Adapter prilagođava postojeći Adaptee interfejs konkretnom Target interfejsu."},
+    {id:77,lesson:"Lekcija 13 — Predlošci",type:"single",q:"U Adapter predlošku komponenta Client:",o:["komunicira s objektima koji implementiraju Target interfejs","kreira dijelove kompleksnog objekta","čuva i obavještava pretplaćene posmatrače","predstavlja interfejs koji se prilagođava"],c:[0],e:"Client komunicira s objektima koji implementiraju Target interfejs."},
+    {id:78,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Ključne komponente Builder predloška su:",o:["Builder interfejs","ConcreteBuilder","Director","Product","Adaptee","Client","ConcreteObserver"],c:[0,1,2,3],e:"Stari SI navodi Builder interfejs, ConcreteBuilder, Director i Product."},
+    {id:79,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Builder interfejs u Builder predlošku:",o:["specificira interfejs za kreiranje objekata","čuva pretplaćene posmatrače","predstavlja konačni kompleksni objekat","prilagođava dva nekompatibilna interfejsa"],c:[0],e:"Builder interfejs specificira interfejs za kreiranje objekata."},
+    {id:80,lesson:"Lekcija 13 — Predlošci",type:"single",q:"ConcreteBuilder klasa u Builder predlošku:",o:["kreira dijelove potrebne za konstrukciju kompleksnog objekta","konstruiše objekat koristeći gotovi Product interfejs","samo prikazuje već kreirani objekat","obavještava posmatrače o promjenama"],c:[0],e:"ConcreteBuilder kreira dijelove neophodne za konstruisanje kompleksnog objekta."},
+    {id:81,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Product klasa u Builder predlošku:",o:["predstavlja kompleksni objekat koji se kreira iz više dijelova","specificira interfejs za kreiranje objekata","prilagođava postojeći interfejs","upravlja pretplatama posmatrača"],c:[0],e:"Product predstavlja kompleksni objekat koji je potrebno kreirati iz više dijelova."},
+    {id:82,lesson:"Lekcija 13 — Predlošci",type:"multiple",q:"Ključne komponente Observer predloška su:",o:["Observable","ConcreteObservable","Observer","ConcreteObserver","Builder","Adaptee","Director"],c:[0,1,2,3],e:"Stari SI kao komponente Observer predloška navodi Observable, ConcreteObservable, Observer i ConcreteObserver."},
+    {id:83,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Observable u Observer predlošku:",o:["definiše operacije za pretplatu posmatrača na događaj","predstavlja konkretnu implementaciju posmatrača","čuva i obavještava pretplaćene posmatrače","prilagođava nekompatibilne interfejse"],c:[0],e:"Observable je interfejs koji definiše operacije za pretplatu posmatrača na određeni događaj."},
+    {id:84,lesson:"Lekcija 13 — Predlošci",type:"single",q:"Observer u Observer predlošku:",o:["definiše operacije za obavještavanje posmatrača o nastalim promjenama","čuva listu pretplaćenih posmatrača i šalje obavijesti","predstavlja konkretnu implementaciju posmatrača","specificira interfejs za kreiranje kompleksnih objekata"],c:[0],e:"Observer je interfejs koji definiše operacije za obavještavanje posmatrača o nastalim promjenama."},
+    {id:85,lesson:"Lekcija 13 — Predlošci",type:"single",q:"ConcreteObserver u Observer predlošku predstavlja:",o:["konkretnu implementaciju posmatrača","interfejs za pretplatu posmatrača","klasu koja čuva i obavještava sve pretplaćene posmatrače","postojeći interfejs koji treba prilagoditi"],c:[0],e:"ConcreteObserver je konkretna implementacija posmatrača."},
+    {id:86,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Funkcionalno testiranje predstavlja:",o:["provjeru izvršava li integrisani sistem funkcije opisane u specifikaciji zahtjeva","provjeru samo jedne metode sa svim očekivanim ulazima","provjeru saradnje komponenti prema specifikaciji dizajna","provjeru rada sistema tek nakon isporuke"],c:[0],e:"Stari SI funkcionalno testiranje definiše kao provjeru da integrisani sistem izvršava funkcije iz specifikacije zahtjeva."},
+    {id:87,lesson:"Lekcija 14 — Testiranje",type:"multiple",q:"Najčešći uzroci otkaza softvera su:",o:["pogrešna specifikacija zahtjeva","nemogućnost implementacije definisanog zahtjeva","greška u dizajnu sistema","greška u programskom kodu","veliki broj korisničkih priča","kratko trajanje dnevnog sastanka","korištenje verzijske kontrole"],c:[0,1,2,3],e:"Stari SI kao uzroke otkaza navodi pogrešnu specifikaciju, nemogućnost implementacije zahtjeva te greške u dizajnu i kodu."},
+    {id:88,lesson:"Lekcija 1 — Osnove",type:"single",q:"Sistem je skup:",o:["entiteta, aktivnosti, njihovih odnosa i granica sistema","isključivo programskih komponenti i baze podataka","metoda i alata bez međusobnih odnosa","samo korisnika i njihovih zahtjeva"],c:[0],e:"Stari SI sistem definiše kao skup entiteta, aktivnosti, njihovih odnosa i granica sistema."},
+    {id:89,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"U fazi projektovanja obično učestvuju:",o:["analitičar","projektant","instruktor","isključivo tester","Product Owner"],c:[0,1],e:"Stari SI direktno navodi analitičara i projektanta kao učesnike faze projektovanja."},
+    {id:90,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Test je konačan skup ulaznih podataka koji se koriste za testiranje programa.",o:["Da","Ne"],c:[1],e:"Netačno: slučaj za testiranje je konkretan izbor ulaznih podataka, dok je test konačna kolekcija slučajeva za testiranje."},
+    {id:91,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Slučaj za testiranje je konkretan izbor ulaznih podataka koji će se upotrijebiti za testiranje programa.",o:["Ne","Da"],c:[1],e:"Stari SI upravo ovako definiše slučaj za testiranje; test je kolekcija takvih slučajeva."},
+    {id:92,lesson:"Lekcija 6 — XP",type:"multiple",q:"Odaberite osnovne uloge XP programera:",o:["procjena korisničkih priča i podjela na manje zadatke","procjena vremena potrebnog za razvoj","kreiranje jediničnih testova","refaktorisanje","interakcija s korisnikom","samostalno određivanje prioriteta product backloga","pisanje cjelokupne dokumentacije prije implementacije"],c:[0,1,2,3,4],e:"Stari SI navodi procjenu i podjelu priča, procjenu vremena, kreiranje Unit testova, refaktorisanje i interakciju s korisnikom."},
+    {id:93,lesson:"Lekcija 6 — XP",type:"multiple",q:"Odaberite osnovne uloge XP trenera:",o:["praćenje poštivanja XP principa i praksi","predvođenje razvojnog tima tokom XP procesa","uparivanje članova tima kada je potrebno","određivanje prioriteta product backloga","samostalno pisanje svih jediničnih testova","odobravanje budžeta naručioca"],c:[0,1,2],e:"Stari SI XP treneru dodjeljuje praćenje principa i praksi, predvođenje tima i uparivanje članova kada je potrebno."},
+    {id:94,lesson:"Lekcije 8–9 — Proces i projekat",type:"single",q:"Šta je metoda kritične putanje?",o:["analiza putanja među prekretnicama kojom se određuju aktivnosti najkritičnije za završetak projekta na vrijeme","metoda određivanja najkraćeg programskog koda","postupak za izbor najjeftinijeg razvojnog alata","tehnika za rangiranje korisničkih priča prema poslovnoj vrijednosti"],c:[0],e:"Stari SI metodu kritične putanje definiše kao analizu putanja među prekretnicama radi određivanja aktivnosti najkritičnijih za pravovremen završetak projekta."},
+    {id:95,lesson:"Lekcija 2 — Procesni modeli",type:"single",q:"V model je nastao modifikacijom kojeg modela?",o:["Vodopada","Kanban","Crystal"],c:[0],e:"V model zadržava faze vodopada, ali ih povezuje s odgovarajućim nivoima testiranja kako bi se razvojni rezultati provjeravali sistematičnije."},
+    {id:96,lesson:"Lekcija 13 — Predlošci",type:"single",q:"U okviru Adapter predloška, komponenta Adaptee se odnosi na",o:["postojeći interfejs kojeg treba prilagoditi","specifični interfejs koji treba prilagoditi","komponentu koja komunicira sa objektima koji implementiraju Target interfejs","ništa od navedenog","komponentu koja prilagođava interfejs Adapter konkretnom Target interfejsu"],c:[0],e:"Adaptee je već postojeći, ali nekompatibilan interfejs. Adapter ga prevodi u oblik koji Target i Client mogu koristiti."},
+    {id:97,lesson:"Lekcija 1 — Osnove",type:"multiple",q:"Procesni modeli su?",o:["Preskriptivni modeli","Agilni modeli","Nepreskriptivni modeli"],c:[0,1],e:"Skripta procesne modele dijeli na preskriptivne, koji unaprijed propisuju tok razvoja, i agilne, koji rade iterativno i prilagođavaju se promjenama."},
+    {id:98,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Acceptance criteria se kreira za svaku korisničku priču posebno?",o:["Da","Ne"],c:[0],e:"Svaka korisnička priča opisuje zaseban zahtjev, pa mora imati vlastite provjerljive uslove koji pokazuju kada je baš ta priča ispravno završena."},
+    {id:99,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"multiple",q:"Odaberite tačne tvrdnje koje se odnose na aktivnosti analize rezultata sprinta",o:["Definisanje sadržaja analize","Informisati zainteresovane strane najmanje dan prije sastanka","Demonstracija rezultata","Diskusija o ciljevima narednog sprinta","Identifikacija novih elemenata backlog-a proizvoda","Grooming","Ispravka uočenih grešaka"],c:[0,1,2,3,4,5],e:"Analiza rezultata priprema i predstavlja ostvareno, uključuje relevantne učesnike i ažurira budući pravac i backlog. Sama ispravka grešaka je razvojni rad, a ne stavka ovog sastanka."},
+    {id:100,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Kako se računa vrijeme koje se izdvaja za analizu rezultata sprinta?",o:["Trajanje analize (h) = broj sedmica sprinta","Trajanje analize (h) = broj sati sprinta","Trajanje analize (h) = broj dana sprinta"],c:[0],e:"Pravilo veže broj sati analize za broj sedmica sprinta: duži sprint proizvodi više rezultata za pregled i zato zahtijeva više vremena za analizu."},
+    {id:101,lesson:"Lekcije 8–9 — Proces i projekat",type:"multiple",q:"Označi tačne tvrdnje vezane za planiranje i upravljanje projektom",o:["Svaka faza se sastoji od koraka","Svaki korak se sastoji od niza aktivnosti","Svaka aktivnost se sastoji od koraka","Projekat se realizuje kroz niz faza","Projekat se realizuje kroz niz aktivnosti","Aktivnost predstavlja posljednju fazu projekta koja proizvodi rezultate"],c:[0,1,3],e:"Projekat se prvo dijeli na faze, faze na korake, a koraci na aktivnosti. Aktivnost je vremenski ograničen dio projekta, a ne posljednja faza cijelog projekta."},
+    {id:102,lesson:"Lekcija 2 — Procesni modeli",type:"single",q:"U okviru poboljšanog modela Vodopad, neuspješna validacija nas vraća u fazu:",o:["Validacija ne postoji u okviru modela vodopad","Testiranja","Projektovanja programa","Analize zahtjeva","Projektovanja sistema","Programiranja","Isporuke"],c:[3],e:"Validacija pita da li se gradi proizvod koji korisnik stvarno želi. Ako odgovor nije potvrdan, problem je u razumijevanju potreba i zato se vraća na analizu zahtjeva."},
+    {id:103,lesson:"Lekcija 2 — Procesni modeli",type:"single",q:"U okviru poboljšanog modela Vodopad, neuspješna verifikacija nas vraća u fazu:",o:["Validacija ne postoji u okviru modela vodopad","Testiranja","Projektovanja programa","Analize zahtjeva","Projektovanja sistema","Programiranja","Isporuke"],c:[4],e:"Verifikacija provjerava da li je sistem izgrađen prema projektovanoj specifikaciji. Neuspjeh zato vodi nazad na projektovanje sistema, gdje je definisano kako sistem treba biti izgrađen."},
+    {id:104,lesson:"Lekcija 2 — Procesni modeli",type:"single",q:"Kod V modela, koje faze povezuje verifikacija?",o:["Analiza zahtjeva - završno testiranje","Projektovanje sistema - testiranje sistema","Projektovanje programa - testiranje programa"],c:[1],e:"Verifikacija poredi realizovani sistem s njegovim projektnim opisom, pa povezuje projektovanje sistema sa testiranjem sistema."},
+    {id:105,lesson:"Lekcija 2 — Procesni modeli",type:"single",q:"Kod V modela, koje faze povezuje validacija?",o:["Analiza zahtjeva - završno testiranje","Projektovanje sistema - testiranje sistema","Projektovanje programa - testiranje programa"],c:[0],e:"Validacija na završnom testiranju provjerava ispunjava li gotov sistem potrebe definisane tokom analize zahtjeva."},
+    {id:107,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Može li se tokom analize rezultata sprinta diskutovati o novim sprintovima?",o:["Da","Ne"],c:[0],e:"Analiza nije ograničena samo na prošli sprint: razgovor o rezultatima prirodno vodi ka ciljevima i sadržaju narednog sprinta."},
+    {id:108,lesson:"Lekcija 15 — Održavanje",type:"single",q:"Da li postoji sistemsko održavanje?",o:["Da","Ne"],c:[1],e:"Skripta navodi korektivno, adaptivno, preventivno i održavanje u cilju unapređenja. 'Sistemsko održavanje' nije posebna kategorija u toj podjeli."},
+    {id:109,lesson:"Lekcije 3–5 — Scrum i INVEST",type:"single",q:"Funkcionalnosti sa manjim prioritetom su manje opisane i nalaze se pri dnu product backloga?",o:["Da","Ne"],c:[0],e:"Stavke pri vrhu su bliže realizaciji pa moraju biti detaljnije razrađene. Niže prioritetne stavke čekaju kasnije sprintove i zato se drže pri dnu sa manje detalja."},
+    {id:110,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Kod alfa testiranja korisnik je uključen u proces testiranja sistema koji se još nalazi u razvojnom okruženju.",o:["Da","Ne"],c:[0],e:"Alfa testiranje se izvodi prije puštanja stabilne verzije široj grupi korisnika, pa korisnik testira sistem dok je on još u kontrolisanom razvojnom okruženju."},
+    {id:111,lesson:"Lekcija 14 — Testiranje",type:"single",q:"Automatizovani alati se koriste u okviru",o:["Statičke analize","Dinamičke analize"],c:[1],e:"Dinamička analiza prati ponašanje programa tokom izvršavanja, pa automatizovani alati mogu mjeriti i prijavljivati ono što se dešava dok sistem radi."},
+    {id:112,lesson:"Lekcija 1 — Osnove",type:"single",q:"Alat je automatizovan sistem?",o:["Da","Ne"],c:[0],e:"Alat je instrument, odnosno automatizovani sistem, koji pomaže da se određena aktivnost izvrši kvalitetnije i dosljednije."}
+  ];
+
+  const EXPLANATION_UPDATES = {
+    1:"Preskriptivni modeli unaprijed uređuju faze i tok razvoja. Inkrementalni i spiralni pripadaju toj grupi, dok su Kanban, Scrum i Crystal agilni pristupi.",
+    4:"Paradigma je opći način razmišljanja o razvoju. Metoda je konkretan postupak, alat je sredstvo, a procedura povezuje metode i alate.",
+    5:"Kvalitet zavisi od samog proizvoda, načina na koji je napravljen i toga koliko dobro služi u stvarnom poslovnom okruženju.",
+    9:"Epic je prevelik da bi se tretirao kao jedna mala korisnička priča, pa se razlaže na više priča i često realizuje kroz nekoliko sprintova.",
+    11:"Razvojni tim implementira zadatke, zato mora razumjeti zahtjeve i realno procijeniti kapacitet svojih članova. Prioritete proizvoda određuje Product Owner.",
+    12:"Product Owner predstavlja potrebe i vrijednost proizvoda, pa timu donosi najprioritetnije stavke product backloga za razmatranje u sprintu.",
+    14:"Razvojni tim pokazuje rezultat, Product Owner procjenjuje vrijednost, Scrum Master podržava proces, a stakeholderi daju potrebnu poslovnu povratnu informaciju.",
+    16:"XP se oslanja na blisku saradnju, kratke povratne petlje i stalno poboljšavanje koda, zbog čega koristi rad u paru, jednostavan dizajn, refaktorisanje i često testiranje.",
+    17:"git fetch samo preuzima udaljene promjene. git pull ih preuzima i zatim integriše u trenutnu granu, pa može promijeniti radne fajlove i HEAD.",
+    19:"git diff poredi dva stanja projekta i prikazuje šta je dodano, uklonjeno ili promijenjeno prije nego što se izmjene potvrde.",
+    22:"Produkcioni sistem je stabilna verzija koju koriste korisnici, dok se nova funkcionalnost i izmjene pripremaju u razvojnom sistemu.",
+    23:"Proces mora opisati šta se radi, pod kojim pravilima ili granicama i kojim sredstvima, zato obuhvata aktivnosti, ograničenja i resurse.",
+    24:"Aktivnosti pokazuju posao koji se izvršava, a prekretnice označavaju važne kontrolne tačke na kojima se može procijeniti napredak projekta.",
+    27:"Službena dokumentacija daje početnu, provjerljivu sliku postojećih pravila, procesa i ograničenja prije razgovora i drugih tehnika prikupljanja zahtjeva.",
+    28:"Zahtjevi se otkrivaju iz više uglova: dokumenti daju postojeće činjenice, razgovori i ankete stavove korisnika, posmatranje stvarni rad, a scenariji i prototipi pomažu razjasniti buduće ponašanje sistema.",
+    29:"Validacija odgovara na pitanje „gradimo li pravi proizvod“ — provjerava da li zapisana specifikacija zaista predstavlja ono što naručilac želi dobiti.",
+    30:"Evidentiranje zahtjeva mora obuhvatiti njihovo otkrivanje, razumijevanje i modeliranje, provjeru kvaliteta te jasno dokumentovanje za dalji razvoj.",
+    39:"Minimiziranje kompleksnosti olakšava razumijevanje koda, standardi i verifikacijski mehanizmi čine ga dosljednijim i provjerljivijim, a ponovna iskoristivost i mogućnost nadogradnje olakšavaju buduće izmjene.",
+    40:"Standardi ujednačavaju način pisanja koda, rukovanje greškama, sigurnost, dokumentovanje i korištenje resursa, pa različiti programeri mogu lakše razumjeti i održavati sistem.",
+    41:"Programiranje ne završava pisanjem koda: kod se mora provjeriti, greške ukloniti i rješenje održavati kako bi zadatak pouzdano izvršavalo i nakon izmjena.",
+    42:"Predlošci ponašanja uređuju komunikaciju i raspodjelu odgovornosti među objektima. Interpreter i Mediator upravo rješavaju takve probleme interakcije.",
+    44:"Privatan konstruktor sprečava slobodno kreiranje objekata, statički atribut čuva jedinu instancu, a javna statička metoda kontroliše pristup toj instanci.",
+    46:"ConcreteObservable čuva stanje i listu pretplaćenih posmatrača te ih obavještava kada se stanje promijeni; interfejsi samo određuju ugovor komunikacije.",
+    48:"Statička analiza pregleda kod bez njegovog izvršavanja, pa može provjeravati strukturu, tok podataka i redoslijed naredbi.",
+    49:"Statička analiza traži probleme pregledom neizvršenog koda, dok dinamička analiza posmatra ponašanje programa tokom rada.",
+    52:"Opterećenje sistema postepeno se povećava kako bi se provjerilo koliko dugo ostaje pouzdan i gdje njegovo ponašanje postaje neprihvatljivo.",
+    54:"Sistem može raditi u razvojnom okruženju, a zakazati nakon instalacije zbog konfiguracije ili zavisnosti; instalacioni test provjerava upravo isporučeno okruženje.",
+    57:"Funkcionalno održavanje mijenja ono što sistem radi: dodaje ili poboljšava funkcije i ispravlja greške koje utiču na očekivano ponašanje.",
+    58:"Kategorije se razlikuju prema razlogu izmjene: ispravka greške, prilagođavanje okruženju, sprečavanje budućih problema ili unapređenje sistema.",
+    60:"Održavanje čuva korisnost i pouzdanost sistema nakon isporuke — popravlja probleme, poboljšava dizajn i funkcije, podržava integracije te sprečava sigurnosno i performansno propadanje.",
+    61:"Reinženjering poboljšava unutrašnju strukturu postojećeg sistema kroz prevođenje koda, analizu unazad, modularizaciju i sređivanje podataka, bez nepotrebne promjene njegovog ponašanja.",
+    62:"Product Owner određuje šta ima najveću vrijednost, razvojni tim procjenjuje kako i koliko može uraditi, a Scrum Master osigurava da planiranje pravilno teče.",
+    63:"Pregled završenog sprinta donosi novu povratnu informaciju i može otkriti nedostajuće potrebe, pa se iz toga formiraju nove stavke product backloga.",
+    64:"Intuitivni stil se oslanja na osjećaje, a introvertni način komunikacije traži mišljenje druge osobe umjesto da joj odmah saopštava zaključak.",
+    65:"Intuitivni stil priznaje osjećaje, dok ekstrovertni način podrazumijeva otvoreno saopštavanje drugima.",
+    66:"Racionalni stil odluku zasniva na logici, a introvertni način prvo pita drugu osobu.",
+    67:"Racionalni stil odluku zasniva na logici, a ekstrovertni način zaključak otvoreno saopštava drugima.",
+    68:"Funkcionalni zahtjevi opisuju šta sistem radi, dok nefunkcionalni određuju koliko dobro to radi — npr. brzinu, pouzdanost i jednostavnost korištenja.",
+    70:"Princip bez egoizma raspoređuje vlasništvo i odlučivanje na cijeli tim, pa nijedan član nema trajno nadređen položaj nad ostalima.",
+    71:"Spiralni model u svakom ciklusu ponovo prepoznaje i procjenjuje rizike prije većeg ulaganja u narednu fazu, čime ih postepeno smanjuje i kontroliše.",
+    72:"Kreacijski predlošci rješavaju način nastanka objekata: Builder ih sastavlja, Factory Method bira način kreiranja, Prototype kopira, a Singleton ograničava broj instanci.",
+    73:"Strukturalni predlošci uređuju kako se klase i objekti povezuju u veće cjeline, bez promjene njihove osnovne odgovornosti.",
+    74:"Target određuje interfejs koji klijent očekuje, Adaptee je postojeći nekompatibilni interfejs, Adapter ih prevodi, a Client koristi rezultat.",
+    78:"Builder određuje korake izgradnje, ConcreteBuilder ih izvršava, Director upravlja redoslijedom, a Product je završeni kompleksni objekat.",
+    82:"Observable objavljuje promjene, ConcreteObservable čuva stvarno stanje, Observer definiše način prijema obavijesti, a ConcreteObserver reaguje na njih.",
+    86:"Funkcionalni test posmatra sistem kao cjelinu i provjerava daje li za zadane ulaze funkcije i rezultate obećane zahtjevima.",
+    87:"Otkaz nastaje kada je očekivano ponašanje pogrešno definisano, nije izvodljivo ili je greška unesena tokom dizajna ili kodiranja.",
+    88:"Sistem nije samo zbir dijelova: čine ga elementi, posao koji obavljaju, njihovi međusobni odnosi i granica prema okruženju.",
+    89:"Analitičar pretvara potrebe u razumljiv opis problema, a projektant taj opis oblikuje u tehničko rješenje, pa su obje uloge potrebne u projektovanju.",
+    91:"Slučaj za testiranje opisuje jedan konkretan skup ulaza i očekivani ishod; više takvih slučajeva zajedno čini test.",
+    92:"XP programer razlaže i procjenjuje posao, implementira ga uz testove, poboljšava kod refaktorisanjem i stalno razjašnjava potrebe s korisnikom.",
+    93:"XP trener čuva način rada tima: prati primjenu XP praksi, vodi tim kroz proces i pomaže u pravilnom uparivanju članova.",
+    94:"Kritična putanja povezuje aktivnosti bez vremenske rezerve; kašnjenje bilo koje od njih direktno pomjera završetak cijelog projekta."
+  };
+  const EXPLANATION_UPDATES_MORE = {
+    2:"Metoda opisuje ponovljiv način dolaska do rezultata. Za razliku od nje, alat je sredstvo kojim se rad olakšava, paradigma je opći pogled na razvoj, a procedura povezuje više metoda i alata.",
+    3:"Metoda određuje kako se neka aktivnost izvodi, a alat pruža podršku za njeno izvođenje. Tek njihov usklađen spoj čini proceduru koja vodi do konkretnog proizvoda.",
+    6:"Nezavisna priča može se razviti i isporučiti bez čekanja na druge priče. Time se smanjuju blokade i timu omogućava slobodniji izbor redoslijeda rada.",
+    7:"Korisnička priča nije nepromjenjiv ugovor nego početak razgovora. Pregovaranjem tim i naručilac mogu razjasniti detalje i prilagoditi rješenje bez gubitka poslovnog cilja.",
+    8:"Tim može pouzdano procijeniti samo priču čiji je obim dovoljno jasan. Ako se ne zna šta priča obuhvata, nije moguće realno odrediti trud ni trajanje.",
+    10:"Cilj sprinta objašnjava zašto se sprint radi, a sprint backlog određuje šta će tim uraditi da taj cilj ostvari. Kapacitet i definicije spremnosti/završenosti pomažu planiranju, ali nisu njegov konačni izlaz.",
+    15:"Retrospektiva posmatra način na koji je tim radio kako bi otkrila šta treba zadržati ili promijeniti. Demonstracija proizvoda i prikupljanje poslovnog feedbacka pripadaju pregledu rezultata sprinta.",
+    18:"Rebase uzima postojeće commitove i ponovo ih postavlja na novu osnovu, čime može urediti linearniju historiju. Merge prvenstveno spaja grane, dok stash samo privremeno sklanja izmjene.",
+    20:"git commit pravi trajnu tačku u historiji od promjena koje su već pripremljene u stagingu. git add samo priprema izmjene, a status i stash ne kreiraju commit.",
+    21:"Staging je međukorak između radnih fajlova i commita. git add bira koje će izmjene ući u sljedeći commit, pa samo uređivanje fajla još nije dovoljno.",
+    25:"Razlika između najranijeg i najkasnijeg mogućeg početka pokazuje koliko se aktivnost može odgoditi bez pomjeranja projekta. Zato se to vrijeme smatra rezervom, odnosno latentnim vremenom.",
+    26:"Identifikacija i analiza prvo utvrđuju koji rizici postoje i koliko su važni. Kontrola počinje nakon toga i određuje kako će se rizik umanjiti, pratiti i razriješiti.",
+    31:"Funkcionalni zahtjev govori šta sistem mora uraditi kao reakciju na ulaz ili događaj. Brzina, pouzdanost i jednostavnost korištenja opisuju kvalitet izvršenja i zato su nefunkcionalni zahtjevi.",
+    32:"Procesno ograničenje sužava način izgradnje sistema — dopuštene tehnike, alati ili resurse. Izbor same platforme ili arhitektonskog rješenja ograničava proizvod i zato pripada projektnom ograničenju.",
+    33:"Projektno ograničenje unaprijed sužava prostor mogućih tehničkih rješenja, primjerice izborom platforme. Ono ne opisuje ponašanje ni kvalitet sistema, nego granice unutar kojih se rješenje smije projektovati.",
+    34:"Ako klasa ima jednu odgovornost, ima i jedan glavni razlog za promjenu. Tako izmjena jednog poslovnog pravila manje vjerovatno narušava nepovezane dijelove klase.",
+    35:"Nove mogućnosti trebaju se dodavati proširenjem, jer direktno mijenjanje već provjerenog koda povećava rizik od kvarenja postojećeg ponašanja.",
+    36:"Kod koji radi s baznom klasom mora nastaviti ispravno raditi i kada dobije izvedenu klasu. Ako izvedena klasa krši očekivana pravila, nasljeđivanje nije ispravno upotrijebljeno.",
+    37:"Velik interfejs prisiljava klase da zavise od operacija koje im ne trebaju. Podjela na manje interfejse omogućava svakoj klasi da implementira samo ugovor koji stvarno koristi.",
+    38:"Kada poslovna logika zavisi od apstraktnog ugovora, konkretna baza, servis ili uređaj mogu se zamijeniti bez promjene te logike. Direktna zavisnost od konkretne implementacije stvara čvrstu povezanost.",
+    43:"Kontrolisano kreiranje instance sprečava da različiti dijelovi programa naprave više objekata koji bi trebali predstavljati isto zajedničko stanje ili resurs.",
+    45:"Director zna kojim redoslijedom treba pozvati korake Buildera. Ne izrađuje sam dijelove i nije završni proizvod; on samo upravlja procesom sastavljanja.",
+    47:"Adaptee je postojeća komponenta koja već radi, ali govori „drugim jezikom“ od onoga koji klijent očekuje. Adapter je omotač koji prevodi između ta dva interfejsa.",
+    50:"Jedinični test izoluje najmanju provjerljivu cjelinu, najčešće metodu ili klasu, kako bi se mjesto greške moglo precizno pronaći. Saradnja više komponenti provjerava se tek integracionim testom.",
+    51:"Komponente mogu pojedinačno biti ispravne, a ipak pogrešno razmjenjivati podatke ili pozivati jedna drugu. Integracioni test upravo provjerava njihove veze i zajednički rad.",
+    53:"Na kraju nije dovoljno da pojedinačne metode i komponente tehnički rade — naručilac mora potvrditi da cijeli sistem rješava dogovoreni poslovni problem. Zato test prihvatanja poredi završeni sistem s korisničkim zahtjevima.",
+    55:"Izmjena jednog dijela sistema može neočekivano pokvariti ranije ispravnu funkciju. Ponovnim izvršavanjem postojećih testova regresioni test otkriva takve sporedne posljedice.",
+    56:"Kod se namjerno zasije poznatim greškama kako bi se vidjelo hoće li ih testovi otkriti. Ako poznata greška prođe neprimijećeno, testni skup nije dovoljno osjetljiv.",
+    59:"Korektivna izmjena nastaje kao reakcija na već pronađenu grešku. Adaptivno održavanje odgovara na promjenu okruženja, a preventivno pokušava spriječiti buduće probleme.",
+    69:"Kod principa glavnog programera odgovornost i konačne tehničke odluke imaju jedno jasno mjesto. Ostali članovi izvještavaju toj osobi, čime se izbjegava nejasno vlasništvo nad odlukama.",
+    75:"Klijent treba stabilan ugovor koji razumije bez poznavanja stare komponente. Target predstavlja taj očekivani ugovor, dok Adapter iza njega skriva prevođenje prema Adaptee interfejsu.",
+    76:"Adapter prima poziv u obliku koji klijent očekuje i pretvara ga u oblik koji postojeći Adaptee razumije. Zato omogućava saradnju bez mijenjanja obje strane.",
+    77:"Client koristi samo Target ugovor i ne mora znati da se iza njega nalazi nekompatibilni Adaptee. Ta odvojenost omogućava kasniju zamjenu adaptera bez promjene klijenta.",
+    79:"Builder interfejs određuje koje korake izgradnje svaki konkretni graditelj mora ponuditi. Ne opisuje tačne dijelove proizvoda; njih određuje ConcreteBuilder.",
+    80:"ConcreteBuilder sadrži stvarna pravila za izradu pojedinih dijelova i njihovo sklapanje. Director samo bira redoslijed tih koraka.",
+    81:"Product je rezultat procesa izgradnje, sastavljen od dijelova koje je napravio ConcreteBuilder. Builder i Director su učesnici procesa, a ne završni objekat.",
+    83:"Observable mora omogućiti dodavanje i uklanjanje zainteresovanih posmatrača. Čuvanje konkretnog stanja i slanje stvarnih obavijesti obavlja ConcreteObservable.",
+    84:"Observer ugovor određuje kako posmatrač prima informaciju o promjeni. Konkretna reakcija na tu informaciju pripada ConcreteObserveru.",
+    85:"ConcreteObserver implementira reakciju određene komponente na obavijest. Observable objavljuje promjenu, ali ne odlučuje kako će svaki posmatrač na nju reagovati.",
+    90:"Ulazni podaci pripadaju pojedinačnom slučaju za testiranje. Test je organizovana kolekcija više takvih slučajeva, pa nije samo jedan skup ulaza.",
+    97:"Preskriptivni modeli unaprijed propisuju faze i tok razvoja, dok agilni modeli rade iterativno i prilagođavaju plan novim informacijama i promjenama.",
+    107:"Analiza rezultata sprinta uključuje diskusiju o ciljevima narednog sprinta, pa odgovor nije ograničen samo na ono što je završeno u prethodnom sprintu."
+  };
+  Object.assign(EXPLANATION_UPDATES,EXPLANATION_UPDATES_MORE);
+  for (const q of BANK) if (EXPLANATION_UPDATES[q.id]) q.e=EXPLANATION_UPDATES[q.id];
+  const EXAM_QUESTION_IDS = new Set([1,10,11,17,22,27,29,38,42,46,48,56,62,63]);
+
+  const $ = id => document.getElementById(id);
+  const state = { order:[], index:0, answers:{}, optionOrder:{}, advanceReady:{}, started:false, timerStartedAt:0, timerInterval:null };
+
+  function updateExamTimer() {
+    const elapsed=Math.max(0,Math.floor((Date.now()-state.timerStartedAt)/1000));
+    const hours=String(Math.floor(elapsed/3600)).padStart(2,'0');
+    const minutes=String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+    const seconds=String(elapsed%60).padStart(2,'0');
+    $('examTimer').textContent=`${hours}:${minutes}:${seconds}`;
+  }
+
+  function stopExamTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval=null;
+  }
+
+  function formatResultTime(timestamp) {
+    const date=new Date(timestamp), pad=value=>String(value).padStart(2,'0');
+    return `${pad(date.getDate())}.${pad(date.getMonth()+1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function shuffle(items) {
+    const a = items.slice();
+    for (let i=a.length-1;i>0;i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function canonical(values) { return (values||[]).slice().map(Number).sort((a,b)=>a-b); }
+  function isCorrect(q, selected) {
+    const a=canonical(selected), c=canonical(q.c);
+    return a.length===c.length && a.every((v,i)=>v===c[i]);
+  }
+  function currentQuestion() { return BANK.find(q=>q.id===state.order[state.index]); }
+  function selectedLessons() { return [...document.querySelectorAll('.lesson-check:checked')].map(x=>x.value); }
+  function pool() { const lessons=new Set(selectedLessons()); return BANK.filter(q=>lessons.has(q.lesson)); }
+  function optionIndices(q) {
+    if (!state.optionOrder[q.id]) {
+      const base=q.o.map((_,i)=>i);
+      state.optionOrder[q.id]=$('shuffleAnswers').checked?shuffle(base):base;
+    }
+    return state.optionOrder[q.id];
+  }
+  function answeredCount() { return state.order.filter(id=>(state.answers[id]||[]).length>0).length; }
+  function answerText(q, indices) {
+    if (!(indices||[]).length) return '— bez odgovora —';
+    return canonical(indices).map(i=>`${String.fromCharCode(65+i)}) ${q.o[i]}`).join(' · ');
+  }
+  function answerListHtml(q, indices, kind) {
+    const values=canonical(indices);
+    if (!values.length) return `<div class="empty-answer">— bez odgovora —</div>`;
+    return `<div class="answer-list ${kind}">${values.map(i=>`
+      <div class="answer-item">
+        <span class="answer-letter">${String.fromCharCode(65+i)})</span>
+        <span>${escapeHtml(q.o[i])}</span>
+      </div>`).join('')}</div>`;
+  }
+  function clearOptionMarks() {
+    document.querySelectorAll('#options .option').forEach(label=>{
+      label.classList.remove('answer-correct','answer-wrong');
+      label.querySelector('.result-mark')?.remove();
+    });
+  }
+
+  function hideFeedback() {
+    clearOptionMarks();
+    $('feedback').className='feedback hidden';
+    $('feedback').innerHTML='';
+  }
+
+  function markOptions(q) {
+    clearOptionMarks();
+    document.querySelectorAll('#options .option').forEach(label=>{
+      const optionIndex=Number(label.dataset.optionIndex), correct=q.c.includes(optionIndex);
+      label.classList.add(correct?'answer-correct':'answer-wrong');
+      const mark=document.createElement('span');
+      mark.className='result-mark'; mark.setAttribute('aria-hidden','true'); mark.textContent=correct?'✓':'✕';
+      label.appendChild(mark);
+    });
+  }
+
+  function showFeedback() {
+    const q=currentQuestion(), selected=state.answers[q.id]||[];
+    const ok=selected.length>0 && isCorrect(q,selected);
+    markOptions(q);
+    $('feedback').className=`feedback ${ok?'good':'bad'}`;
+    $('feedback').innerHTML=`
+      <div class="verdict">${ok?'Tačno ✅':'Netačno ❌'}</div>
+      <div class="explain"><strong>Objašnjenje:</strong> ${escapeHtml(q.e)}</div>`;
+  }
+
+  function renderQuestion() {
+    const q=currentQuestion(), total=state.order.length;
+    $('counterPill').textContent=`${state.index+1}/${total} :`;
+    $('questionJump').value=String(state.index);
+    $('lessonPill').textContent=q.lesson;
+    $('typePill').textContent=q.type==='multiple'?'VIŠE TAČNIH':'JEDAN TAČAN';
+    $('answeredPill').textContent=`Odgovoreno ${answeredCount()}/${total}`;
+    $('examPill').classList.toggle('hidden',!EXAM_QUESTION_IDS.has(q.id));
+    $('progressBar').style.width=`${Math.round(((state.index+1)/total)*100)}%`;
+    $('questionText').textContent=`${state.index+1}/${total} : ${q.q}`;
+    const selected=new Set(state.answers[q.id]||[]), wrap=$('options');
+    wrap.innerHTML='';
+    for (const [displayIndex,originalIndex] of optionIndices(q).entries()) {
+      const label=document.createElement('label'); label.className='option';
+      label.dataset.optionIndex=originalIndex;
+      const input=document.createElement('input');
+      input.type=q.type==='multiple'?'checkbox':'radio'; input.name=`q_${q.id}`;
+      input.checked=selected.has(originalIndex);
+      input.addEventListener('change',()=>{
+        if (q.type==='single') state.answers[q.id]=[originalIndex];
+        else {
+          const current=new Set(state.answers[q.id]||[]);
+          input.checked?current.add(originalIndex):current.delete(originalIndex);
+          state.answers[q.id]=[...current];
+        }
+        delete state.advanceReady[q.id];
+        $('answeredPill').textContent=`Odgovoreno ${answeredCount()}/${total}`;
+        $('nextBtn').textContent='>>';
+        hideFeedback();
+      });
+      const key=document.createElement('span'); key.className='key'; key.textContent=String(displayIndex+1);
+      const text=document.createElement('span'); text.className='option-text'; text.textContent=q.o[originalIndex];
+      label.append(input,key,text); wrap.appendChild(label);
+    }
+    $('prevBtn').disabled=state.index===0;
+    $('nextBtn').disabled=false;
+    $('nextBtn').textContent='>>';
+    state.advanceReady[q.id]?showFeedback():hideFeedback();
+  }
+
+  function start(mode) {
+    const chosen=pool();
+    if (!chosen.length) { alert('Označi najmanje jednu oblast.'); return; }
+    let ids=chosen.map(q=>q.id);
+    if (mode==='25') ids=shuffle(ids).slice(0,Math.min(25,ids.length));
+    else if ($('shuffleQuestions').checked) ids=shuffle(ids);
+    state.order=ids; state.index=0; state.answers={}; state.optionOrder={}; state.advanceReady={}; state.started=true;
+    $('questionJump').innerHTML=ids.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    stopExamTimer(); state.timerStartedAt=Date.now(); updateExamTimer();
+    state.timerInterval=setInterval(updateExamTimer,1000);
+    document.body.classList.add('quiz-active'); $('examTopbar').classList.remove('hidden');
+    $('menuCard').classList.add('hidden'); $('resultCard').classList.add('hidden'); $('quizCard').classList.remove('hidden');
+    renderQuestion(); window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function move(delta) {
+    if (delta>0) {
+      const q=currentQuestion();
+      if (!state.advanceReady[q.id]) {
+        state.advanceReady[q.id]=true;
+        showFeedback();
+        $('nextBtn').textContent='>>';
+        return;
+      }
+      if (state.index===state.order.length-1) { finish(); return; }
+    }
+    const next=Math.max(0,Math.min(state.order.length-1,state.index+delta));
+    if (next===state.index) return;
+    state.index=next; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function finish() {
+    stopExamTimer();
+    const total=state.order.length;
+    const rows=state.order.map(id=>{const q=BANK.find(x=>x.id===id),selected=state.answers[id]||[];return {q,selected,ok:isCorrect(q,selected)};});
+    const correct=rows.filter(x=>x.ok).length, answered=answeredCount(), pct=Math.round(correct/total*10000)/100;
+    $('quizCard').classList.add('hidden'); $('resultCard').classList.remove('hidden');
+    $('resultStart').textContent=formatResultTime(state.timerStartedAt);
+    $('resultEnd').textContent=formatResultTime(Date.now());
+    $('score').textContent=`${pct}%`;
+    $('scoreDetails').textContent=`Tačno ${correct} od ${total} · Odgovoreno ${answered} od ${total}`;
+    const bad=rows.filter(x=>!x.ok), wrap=$('results'); wrap.innerHTML='';
+    $('mistakesPanel').classList.add('hidden');
+    $('toggleMistakesBtn').disabled=bad.length===0;
+    $('toggleMistakesBtn').textContent=bad.length?`Prikaži pogrešne odgovore (${bad.length})`:'Nema pogrešnih odgovora';
+    if (!bad.length) wrap.innerHTML='<div class="feedback good"><div class="verdict">Sve je tačno — bravo! ✅</div></div>';
+    for (const {q,selected} of bad) {
+      const item=document.createElement('div'); item.className='missed';
+      item.innerHTML=`<div class="missed-title">${escapeHtml(q.q)}</div>
+        <div class="response-block chosen-response">
+          <div class="response-label">Tvoj odgovor</div>
+          ${answerListHtml(q,selected,'chosen-list')}
+        </div>
+        <div class="response-block correct-answer">
+          <div class="response-label">Tačan odgovor</div>
+          ${answerListHtml(q,q.c,'correct-list')}
+        </div>
+        <div class="explain"><strong>Zašto:</strong> ${escapeHtml(q.e)}</div>`;
+      wrap.appendChild(item);
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function showMenu() {
+    stopExamTimer(); document.body.classList.remove('quiz-active'); $('examTopbar').classList.add('hidden');
+    state.started=false; $('resultCard').classList.add('hidden'); $('quizCard').classList.add('hidden'); $('menuCard').classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function updateSelectedCount() {
+    const count=pool().length; $('selectedCount').textContent=`${count} pitanja`;
+    $('startAllBtn').disabled=count===0; $('start25Btn').disabled=count===0;
+    $('start25Btn').textContent=count>=25?'Random 25 pitanja':`Random ${count} pitanja`;
+  }
+
+  function initMenu() {
+    const lessons=[...new Set(BANK.map(q=>q.lesson))], grid=$('lessonGrid');
+    for (const lesson of lessons) {
+      const count=BANK.filter(q=>q.lesson===lesson).length;
+      const label=document.createElement('label'); label.className='lesson';
+      const input=document.createElement('input'); input.type='checkbox'; input.className='lesson-check'; input.value=lesson; input.checked=true;
+      input.addEventListener('change',updateSelectedCount);
+      const text=document.createElement('span'); text.textContent=`${lesson} (${count})`;
+      label.append(input,text); grid.appendChild(label);
+    }
+    $('bankCount').textContent=BANK.length===1?'1 provjereno pitanje':`${BANK.length} provjerenih pitanja`;
+    updateSelectedCount();
+  }
+
+  $('selectAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=true);updateSelectedCount();});
+  $('clearAllBtn').addEventListener('click',()=>{document.querySelectorAll('.lesson-check').forEach(x=>x.checked=false);updateSelectedCount();});
+  $('startAllBtn').addEventListener('click',()=>start('all'));
+  $('start25Btn').addEventListener('click',()=>start('25'));
+  $('clearAnswerBtn').addEventListener('click',()=>{
+    const q=currentQuestion();
+    delete state.answers[q.id];
+    delete state.advanceReady[q.id];
+    renderQuestion();
+  });
+  $('prevBtn').addEventListener('click',()=>move(-1));
+  $('nextBtn').addEventListener('click',()=>move(1));
+  $('questionJump').addEventListener('change',event=>{
+    state.index=Number(event.target.value);
+    renderQuestion();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  $('finishBtn').addEventListener('click',finish);
+  $('toggleMistakesBtn').addEventListener('click',()=>{
+    const panel=$('mistakesPanel'), willShow=panel.classList.contains('hidden');
+    panel.classList.toggle('hidden',!willShow);
+    $('toggleMistakesBtn').textContent=willShow?'Sakrij pogrešne odgovore':`Prikaži pogrešne odgovore (${document.querySelectorAll('#results .missed').length})`;
+  });
+  $('menuBtn').addEventListener('click',showMenu);
+  document.addEventListener('keydown',event=>{if(!state.started||$('quizCard').classList.contains('hidden'))return;if(event.key==='ArrowLeft')move(-1);if(event.key==='ArrowRight')move(1);});
+  initMenu();
+  </script>
+</body>
+</html>
